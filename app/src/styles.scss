@@ -1,1 +1,327 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
+
+:root {
+  --roche-blue: #0b41cd;
+  --roche-dark-blue: #022366;
+  --roche-extra-light-blue: #bde3ff;
+  --grey-1: #544f4f;
+  --grey-2: #706b69;
+  --grey-3: #c2bab5;
+  --grey-4: #dbd6d1;
+  --grey-5: #f5f5f2;
+  --accent-red: #ff1f26;
+  --accent-orange: #ff7d29;
+  --accent-purple: #bc36f0;
+  --status-red: #cc0033;
+  --status-green: #007c6b;
+  --white: #ffffff;
+  --line: var(--grey-3);
+  --roche-navy: var(--roche-dark-blue);
+  --roche-green: var(--status-green);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: 'Source Sans 3', Arial, sans-serif;
+  color: var(--grey-1);
+  background: var(--grey-5);
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  font-size: 16px;
+  border-radius: 0;
+  max-width: 100%;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--roche-blue);
+}
+
+.roche-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px max(20px, env(safe-area-inset-right)) 14px max(20px, env(safe-area-inset-left));
+  padding-top: max(14px, env(safe-area-inset-top));
+  background: var(--white);
+  color: var(--roche-dark-blue);
+  border-bottom: 4px solid var(--roche-blue);
+}
+
+.roche-header > :last-child {
+  min-width: 0;
+}
+
+.roche-header strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--roche-dark-blue);
+}
+
+.roche-header span {
+  color: var(--grey-2);
+  font-size: 0.9rem;
+}
+
+.roche-header .host-pin {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--roche-dark-blue);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page {
+  width: min(1100px, calc(100% - 48px));
+  margin: 28px auto 40px;
+}
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--grey-4);
+  padding: 20px;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 10px;
+  font-weight: 700;
+  color: var(--roche-dark-blue);
+}
+
+p {
+  color: var(--grey-2);
+  line-height: 1.4;
+}
+
+.btn {
+  border: 1px solid var(--roche-blue);
+  padding: 10px 16px;
+  font-weight: 600;
+  background: var(--roche-blue);
+  color: var(--white);
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.btn:hover {
+  background: var(--roche-dark-blue);
+  border-color: var(--roche-dark-blue);
+}
+
+.btn.secondary {
+  background: var(--white);
+  color: var(--grey-1);
+  border: 1px solid var(--grey-3);
+}
+
+.btn.secondary:hover {
+  background: var(--grey-5);
+  border-color: var(--grey-1);
+}
+
+.btn.ghost {
+  background: var(--white);
+  color: var(--roche-blue);
+  border: 1px solid var(--roche-blue);
+}
+
+.btn.ghost:hover {
+  background: var(--roche-extra-light-blue);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.field span,
+.field label {
+  font-weight: 600;
+  color: var(--roche-dark-blue);
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  border: 1px solid var(--grey-3);
+  padding: 10px 12px;
+  min-height: 44px;
+  background: var(--white);
+  color: var(--grey-1);
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--roche-blue);
+}
+
+.pin {
+  font-size: 3.2rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--roche-dark-blue);
+  line-height: 1;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.muted {
+  color: var(--grey-2);
+}
+
+.error {
+  color: var(--status-red);
+  font-weight: 600;
+}
+
+.table-wrap {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.data th,
+table.data td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--grey-4);
+  white-space: nowrap;
+}
+
+table.data th {
+  color: var(--roche-dark-blue);
+  font-weight: 600;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.choice {
+  min-height: 110px;
+  border: 0;
+  color: var(--white);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.choice.A {
+  background: var(--accent-red);
+}
+.choice.B {
+  background: var(--roche-blue);
+}
+.choice.C {
+  background: var(--accent-orange);
+  color: var(--roche-dark-blue);
+}
+.choice.D {
+  background: var(--accent-purple);
+}
+
+.waiting {
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.waiting h2 {
+  font-size: 1.8rem;
+}
+
+@media (max-width: 800px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .roche-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .pin {
+    font-size: 2rem;
+    letter-spacing: 0.08em;
+  }
+
+  .page {
+    width: min(100% - 24px, 1100px);
+    margin: 16px auto 28px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 1.45rem;
+  }
+
+  .choice {
+    min-height: 72px;
+    font-size: 1.5rem;
+  }
+}
