@@ -1,0 +1,367 @@
+<div class="host-screen">
+<app-roche-header [subtitle]="titles[session()?.game ?? 'lobby']">
+  <div class="host-actions">
+    <button
+      type="button"
+      class="btn ghost"
+      [disabled]="session()?.game === 'lobby'"
+      (click)="back()"
+    >
+      Zurück
+    </button>
+    <button type="button" class="btn" (click)="next()">
+      {{
+        session()?.game === 'feedback'
+          ? 'Spiel beenden'
+          : session()?.game === 'done'
+            ? 'Zur Übersicht'
+            : 'Weiter'
+      }}
+    </button>
+    <div class="host-pin" aria-label="PIN">{{ sessionCode() }}</div>
+  </div>
+</app-roche-header>
+
+<main class="host">
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (session(); as s) {
+    @if (s.game === 'lobby') {
+      <section class="split">
+        <div class="center lobby-join">
+          <div class="box">
+            <div class="pin">{{ s.code }}</div>
+            <img class="qr" [src]="qrSrc()" alt="QR Code zum Beitreten" />
+            <label class="field">
+              <span>Adresse</span>
+              <input [value]="origin()" (input)="origin.set($any($event.target).value)" />
+            </label>
+          </div>
+        </div>
+        <div class="lobby-teams">
+          <h2>Teams ({{ s.teams.length }})</h2>
+          <div class="box">
+            @if (!s.teams.length) {
+              <p class="muted">Noch keine Teams</p>
+            }
+            <ul class="team-list">
+              @for (team of s.teams; track team.id) {
+                <li>
+                  <b>{{ team.name }}</b>
+                  <span>{{ namesOf(team.people) }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
+    }
+
+    @if (s.game === 'heights' && s.stage === 'play') {
+      <section class="stage center">
+        <h1>Körpergrösse eintragen</h1>
+        <div class="box">
+          <p class="count">{{ submitted() }}</p>
+        </div>
+      </section>
+    }
+    @if (s.game === 'heights' && s.stage === 'results') {
+      <section class="split">
+        <div class="panel">
+          <h2>Verteilung in 5-cm-Schritten</h2>
+          <div class="box fill">
+            <p>Median: {{ fmt(heightMedian()) }} cm</p>
+            <app-histogram [bins]="heightBins()" />
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Median</h2>
+          <div class="box fill">
+            <div class="compare">
+              <div class="stat child">
+                <span>Kinder</span>
+                <b>{{ fmt(heightChildMedian()) }} cm</b>
+              </div>
+              <div class="stat parent">
+                <span>Eltern</span>
+                <b>{{ fmt(heightParentMedian()) }} cm</b>
+              </div>
+            </div>
+            <app-bars [rows]="heightCompareRows()" />
+          </div>
+        </div>
+      </section>
+    }
+
+    @if (s.game === 'circumference' && s.stage === 'play') {
+      <section class="stage center">
+        <h1>Zimmerumfang schätzen</h1>
+        <div class="box">
+          <p class="count">{{ submitted() }}</p>
+        </div>
+      </section>
+    }
+    @if (s.game === 'circumference' && s.stage === 'results') {
+      <section class="split">
+        <div class="panel">
+          <h2>Schätzungen</h2>
+          <div class="box fill">
+            <p>Median: {{ fmt(umfangMedian()) }} m</p>
+            <app-strip [points]="umfang()" [mark]="s.umfangTruth" markLabel="Wahrheit" />
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Am nächsten dran</h2>
+          <div class="box fill">
+            <ol class="podium">
+              @for (row of winners(); track $index) {
+                <li>
+                  <b>{{ $index + 1 }}</b>
+                  <div>
+                    <strong>{{ row.personName }}</strong>
+                    <span>{{ row.teamName }}</span>
+                  </div>
+                  <em>{{ row.value }} m</em>
+                  <small>
+                    {{ row.delta === 0 ? 'genau richtig' : row.delta + ' m daneben' }}
+                  </small>
+                </li>
+              }
+            </ol>
+          </div>
+        </div>
+      </section>
+    }
+
+    @if (s.game === 'memory' && currentRound(); as round) {
+      @if (s.stage === 'show') {
+        <section class="stage center memory-show">
+          <h1>{{ round.name }}</h1>
+          <div class="box">
+            <img [src]="moleculeImage(round.promptCid)" [alt]="round.name" />
+          </div>
+        </section>
+      }
+      @if (s.stage === 'play') {
+        <section class="stage center">
+          <h1>Welche Struktur war es?</h1>
+          <div class="mol-grid">
+            @for (option of round.options; track option.label) {
+              <figure class="box">
+                <span class="choice {{ option.label }} mini">{{ option.label }}</span>
+                <span class="mol-frame">
+                  <img
+                    [src]="moleculeImage(option.cid)"
+                    [alt]="option.label"
+                    [style.transform]="moleculeTransform(s.memoryRound, option.cid, round.promptCid)"
+                  />
+                </span>
+              </figure>
+            }
+          </div>
+        </section>
+      }
+      @if (s.stage === 'results') {
+        <section class="split">
+          <div class="panel">
+            <h2>Antworten Runde {{ s.memoryRound + 1 }}</h2>
+            <div class="box">
+              <p>Richtig: {{ round.correctLabel }} — {{ round.name }}</p>
+              <app-bars [rows]="memoryVoteRows()" />
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Punkte</h2>
+            <div class="box">
+              <app-bars [rows]="memoryScoreRows()" />
+            </div>
+          </div>
+        </section>
+      }
+    }
+
+    @if (s.game === 'study' && s.stage === 'play') {
+      <section class="stage center">
+        <h1>Klinische Studie</h1>
+        <div class="box">
+          <p class="count">{{ submitted() }}</p>
+        </div>
+      </section>
+    }
+    @if (s.game === 'study' && s.stage === 'results') {
+      <section class="stage center">
+        <h1>{{ s.studyDrugColor === 'red' ? 'Rot' : 'Schwarz' }} war das Medikament</h1>
+        @if (hasStudyPlot()) {
+          <app-boxplot [boxes]="studyBoxes()" />
+        }
+      </section>
+    }
+
+    @if (s.game === 'feedback') {
+      <section class="stage center">
+        <h1>Feedback</h1>
+        <p>{{ s.feedback.length }} von {{ s.teams.length }} Teams haben bewertet.</p>
+        <div class="box">
+          <app-bars [rows]="feedbackRows()" />
+        </div>
+      </section>
+    }
+
+    @if (s.game === 'done' && recap(); as recap) {
+      <section class="recap">
+        <header class="center">
+          <h1>Auswertung</h1>
+          <p>
+            PIN {{ recap.code }} · {{ recap.teamCount }} Teams · Zimmerumfang
+            {{ recap.umfangTruth }} m · Medikament: {{ recap.studyDrug }}
+          </p>
+          <p>
+            <button type="button" class="text-link" (click)="exportCsv()">CSV</button>
+            ·
+            <button type="button" class="text-link" (click)="exportJson()">JSON</button>
+          </p>
+        </header>
+
+        <div>
+          <h2>Körpergrösse & Zimmerumfang</h2>
+          <div class="box">
+            @if (!recap.measures.length) {
+              <p class="muted">Keine Einträge</p>
+            }
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Person</th>
+                    <th>Rolle</th>
+                    <th>Grösse (cm)</th>
+                    <th>Umfang (m)</th>
+                    <th>Differenz (m)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of recap.measures; track row.teamName + row.personName) {
+                    <tr>
+                      <td>{{ row.teamName }}</td>
+                      <td>{{ row.personName }}</td>
+                      <td>{{ row.role }}</td>
+                      <td>{{ row.heightCm ?? '–' }}</td>
+                      <td>{{ row.umfangM ?? '–' }}</td>
+                      <td>{{ row.umfangDelta ?? '–' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2>Molekül Memory</h2>
+          <div class="box">
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    @for (round of recap.memoryRounds; track round.index) {
+                      <th>{{ round.index + 1 }}. {{ round.name }} ({{ round.correct }})</th>
+                    }
+                    <th>Punkte</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of recap.memory; track row.teamName) {
+                    <tr>
+                      <td>{{ row.teamName }}</td>
+                      @for (cell of row.cells; track $index) {
+                        <td>
+                          @if (cell.ok == null) {
+                            –
+                          } @else {
+                            <span [class.ok]="cell.ok" [class.bad]="!cell.ok">
+                              {{ cell.choice }} {{ cell.ok ? 'richtig' : 'falsch' }}
+                            </span>
+                          }
+                        </td>
+                      }
+                      <td>{{ row.points }} / {{ recap.memoryRounds.length }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2>Klinische Studie</h2>
+          <div class="box">
+            @if (!recap.study.length) {
+              <p class="muted">Keine Einträge</p>
+            }
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Person</th>
+                    <th>Schokolade</th>
+                    <th>Vorher</th>
+                    <th>Nachher</th>
+                    <th>Delta</th>
+                    <th>Behandlung</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of recap.study; track row.teamName + row.personName) {
+                    <tr>
+                      <td>{{ row.teamName }}</td>
+                      <td>{{ row.personName }}</td>
+                      <td>{{ row.chocolate }}</td>
+                      <td>{{ row.before }}</td>
+                      <td>{{ row.after }}</td>
+                      <td>{{ row.delta }}</td>
+                      <td>{{ row.treatment }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2>Feedback</h2>
+          <div class="box">
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Sterne</th>
+                    <th>Kommentar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of recap.feedback; track row.teamName) {
+                    <tr>
+                      <td>{{ row.teamName }}</td>
+                      <td>{{ row.rating || '–' }}</td>
+                      <td>{{ row.comment || '–' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+
+  }
+</main>
+</div>

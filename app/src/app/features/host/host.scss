@@ -1,0 +1,543 @@
+app-host,
+.host-screen {
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: 100dvh;
+}
+
+.host-screen {
+  --host: clamp(16px, 2.4vmin, 42px);
+  --header-h: 64px;
+  --inset: clamp(24px, 3.2vmin, 40px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+  font-size: var(--host);
+  line-height: 1.25;
+}
+
+.host-screen app-roche-header {
+  display: block;
+  width: 100%;
+  margin: 0;
+  flex: 0 0 var(--header-h);
+  height: var(--header-h);
+  max-height: var(--header-h);
+  overflow: hidden;
+}
+
+.host-screen .roche-header {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0 16px;
+  gap: 16px;
+  font-size: 16px;
+  border-bottom-width: 4px;
+}
+
+.host-screen .roche-header strong {
+  font-size: 1rem;
+}
+
+.host-screen .roche-header span {
+  font-size: 0.85rem;
+}
+
+.host-screen .host-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.host-screen .host-actions .btn {
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.host-screen .roche-header .host-pin {
+  font-size: 1.5rem;
+  letter-spacing: 0.12em;
+}
+
+.host-screen main.host {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: auto;
+}
+
+.host-screen main.host > .error {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.host-screen main.host > :not(.error) {
+  flex: 0 1 auto;
+  box-sizing: border-box;
+  width: calc(100% - 2 * var(--inset));
+  max-width: calc(100% - 2 * var(--inset));
+  margin: auto var(--inset);
+  min-height: 0;
+}
+
+.host-screen h1 {
+  font-size: 2.2em;
+  margin: 0 0 0.25em;
+}
+
+.host-screen h2 {
+  font-size: 1.4em;
+  margin: 0 0 0.25em;
+}
+
+.host-screen .center {
+  text-align: center;
+}
+
+.host-screen .stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+}
+
+.host-screen .count {
+  font-size: 2em;
+  font-weight: 700;
+  color: var(--roche-dark-blue);
+  margin: 0;
+  padding: 0.1em 0.4em;
+}
+
+.host-screen .split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3vmin;
+  min-height: 0;
+}
+
+.host-screen .box {
+  background: var(--white);
+  border: 1px solid var(--grey-4);
+  padding: 0.7em 0.9em;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.host-screen .split .box.fill {
+  width: 100%;
+}
+
+.host-screen .box > p {
+  margin: 0 0 0.4em;
+}
+
+.host-screen .box > p:last-child {
+  margin-bottom: 0;
+}
+
+.host-screen .panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  text-align: center;
+}
+
+.host-screen .box app-histogram,
+.host-screen .box app-strip,
+.host-screen .box app-bars {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+}
+
+.host-screen .box app-boxplot,
+.host-screen app-boxplot {
+  display: block;
+  width: min(70vmin, 40em);
+  max-width: 100%;
+  height: auto;
+}
+
+.host-screen .compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+  margin-bottom: 0.9em;
+}
+
+.host-screen .stat span {
+  display: block;
+  color: var(--grey-2);
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.host-screen .stat b {
+  display: block;
+  font-size: 2.4em;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.host-screen .stat.child b {
+  color: #ff7d29;
+}
+
+.host-screen .stat.parent b {
+  color: #022366;
+}
+
+.host-screen app-bars .row {
+  font-size: 1.35em;
+  margin-bottom: 0.7em;
+}
+
+.host-screen app-bars .track {
+  height: 1.5em;
+}
+
+.host-screen .podium {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.host-screen .podium li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.7em;
+  row-gap: 0.1em;
+  align-items: baseline;
+  padding: 0.65em 0;
+  border-bottom: 1px solid var(--grey-4);
+}
+
+.host-screen .podium li:last-child {
+  border-bottom: 0;
+}
+
+.host-screen .podium b {
+  font-size: 1.8em;
+  color: var(--roche-blue);
+}
+
+.host-screen .podium strong {
+  display: block;
+  font-size: 1.5em;
+  color: var(--roche-dark-blue);
+}
+
+.host-screen .podium span {
+  color: var(--grey-2);
+  font-size: 1em;
+}
+
+.host-screen .podium em {
+  font-style: normal;
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--roche-dark-blue);
+}
+
+.host-screen .podium small {
+  grid-column: 2 / 4;
+  color: var(--grey-2);
+  font-size: 0.95em;
+}
+
+.host-screen .lobby-join {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.host-screen .pin {
+  font-size: 3.2em;
+}
+
+.host-screen .qr {
+  width: min(32vmin, 14em);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin: 0.4em 0;
+}
+
+.host-screen .field {
+  font-size: 0.75em;
+  width: min(18em, 100%);
+  margin-bottom: 0.5em;
+}
+
+.host-screen .lobby-teams {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  text-align: left;
+}
+
+.host-screen .lobby-teams .box {
+  max-height: calc(100dvh - var(--header-h) - var(--inset) * 2 - 5em);
+  overflow: auto;
+  margin: 0;
+}
+
+.host-screen .team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.host-screen .team-list li {
+  display: grid;
+  gap: 0.05em;
+  padding: 0.35em 0;
+  border-bottom: 1px solid var(--grey-4);
+}
+
+.host-screen .team-list span {
+  color: var(--grey-2);
+}
+
+.host-screen .memory-show img {
+  width: min(52vmin, 18em);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: transparent;
+}
+
+.host-screen .mol-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2vmin;
+  width: min(64vmin, 28em);
+}
+
+.host-screen .mol-grid figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.host-screen .mol-frame {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  overflow: hidden;
+  background: white;
+}
+
+.host-screen .mol-frame img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  aspect-ratio: 1;
+  transform-origin: center;
+  background: transparent;
+}
+
+.host-screen .mini {
+  display: inline-flex;
+  min-height: 1.5em;
+  padding: 0.15em 0.55em;
+  font-size: 1em;
+  margin-bottom: 0.25em;
+}
+
+.host-screen ol {
+  text-align: left;
+  margin: 0 auto 0.6em;
+  padding-left: 1.2em;
+}
+
+.host-screen .recap {
+  display: grid;
+  gap: 1.2em;
+  text-align: left;
+}
+
+.host-screen .recap .box {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+.host-screen .text-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--roche-blue);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.host-screen .ok {
+  color: var(--roche-green);
+  font-weight: 600;
+}
+
+.host-screen .bad {
+  color: var(--status-red);
+  font-weight: 600;
+}
+
+@media (max-width: 800px) {
+  .host-screen {
+    --host: 16px;
+    --header-h: auto;
+    --inset: 16px;
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+    font-size: 16px;
+  }
+
+  .host-screen app-roche-header {
+    flex: 0 0 auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .host-screen .roche-header {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    gap: 8px;
+  }
+
+  .host-screen .host-actions {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .host-screen .host-actions .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+
+  .host-screen .roche-header .host-pin {
+    font-size: 1.25rem;
+  }
+
+  .host-screen main.host > :not(.error) {
+    margin: 12px var(--inset) 24px;
+  }
+
+  .host-screen h1 {
+    font-size: 1.5em;
+  }
+
+  .host-screen h2 {
+    font-size: 1.15em;
+  }
+
+  .host-screen .split {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .host-screen .stat b {
+    font-size: 1.8em;
+  }
+
+  .host-screen .podium b {
+    font-size: 1.4em;
+  }
+
+  .host-screen .podium strong,
+  .host-screen .podium em {
+    font-size: 1.2em;
+  }
+
+  .host-screen .pin {
+    font-size: 2.2em;
+  }
+
+  .host-screen .qr {
+    width: min(70vw, 14em);
+  }
+
+  .host-screen .memory-show img {
+    width: min(72vw, 18em);
+  }
+
+  .host-screen .mol-grid {
+    width: min(92vw, 28em);
+    gap: 8px;
+  }
+
+  .host-screen .box app-histogram,
+  .host-screen .box app-strip,
+  .host-screen .box app-boxplot,
+  .host-screen app-boxplot,
+  .host-screen .box app-bars {
+    width: 100%;
+  }
+
+  .host-screen .lobby-teams .box {
+    max-height: none;
+    width: 100%;
+  }
+
+  .host-screen .field {
+    width: 100%;
+  }
+
+  .host-screen .recap,
+  .host-screen .recap > *,
+  .host-screen .split,
+  .host-screen .panel,
+  .host-screen .box,
+  .host-screen .table-wrap {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .host-screen .recap header p {
+    overflow-wrap: anywhere;
+  }
+
+  .host-screen .center {
+    max-width: 100%;
+  }
+}

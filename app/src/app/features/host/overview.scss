@@ -1,0 +1,73 @@
+.login {
+  width: min(420px, 100%);
+}
+
+.settings {
+  margin-bottom: 20px;
+}
+
+.settings .btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.login .btn {
+  width: 100%;
+}
+
+.settings .picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.settings .pick {
+  min-height: 48px;
+  border: 0;
+  color: var(--white);
+  font-weight: 700;
+}
+
+.settings .pick.red {
+  background: #c8102e;
+}
+
+.settings .pick.black {
+  background: #1a1a1a;
+}
+
+.settings .pick.selected {
+  outline: 3px solid var(--roche-dark-blue);
+  outline-offset: 2px;
+}
+
+.host-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.data .btn {
+  padding: 6px 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn.danger {
+  color: var(--status-red);
+  border-color: var(--status-red);
+}
+
+@media (max-width: 800px) {
+  .actions {
+    flex-direction: column;
+  }
+
+  .data .btn {
+    width: 100%;
+  }
+}

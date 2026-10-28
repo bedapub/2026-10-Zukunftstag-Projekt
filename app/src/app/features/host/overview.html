@@ -1,0 +1,115 @@
+<app-roche-header subtitle="Moderator">
+  @if (unlocked()) {
+    <div class="host-actions">
+      <button type="button" class="btn ghost" (click)="logout()">Abmelden</button>
+    </div>
+  }
+</app-roche-header>
+
+<main class="page host">
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (!unlocked()) {
+    <form class="card login" (submit)="$event.preventDefault(); login()">
+      <h1>Moderator</h1>
+      <label class="field">
+        <span>Passwort</span>
+        <input
+          type="password"
+          autocomplete="current-password"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
+        />
+      </label>
+      <button class="btn" type="submit" [disabled]="busy()">Weiter</button>
+    </form>
+  } @else {
+    <article class="card settings">
+      <h1>Neues Spiel</h1>
+      <div class="grid-2">
+        <label class="field">
+          <span>Zimmerumfang (m)</span>
+          <input
+            type="number"
+            min="1"
+            step="0.1"
+            [value]="umfangTruth()"
+            (input)="umfangTruth.set(+$any($event.target).value)"
+          />
+        </label>
+        <div class="field">
+          <span>Medikament</span>
+          <div class="picks">
+            <button
+              type="button"
+              class="pick red"
+              [class.selected]="studyDrugColor() === 'red'"
+              (click)="studyDrugColor.set('red')"
+            >
+              Rot
+            </button>
+            <button
+              type="button"
+              class="pick black"
+              [class.selected]="studyDrugColor() === 'black'"
+              (click)="studyDrugColor.set('black')"
+            >
+              Schwarz
+            </button>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn" [disabled]="busy()" (click)="startGame()">
+        Neues Spiel starten
+      </button>
+    </article>
+
+    <article class="card">
+      <h1>Vergangene Spiele</h1>
+      @if (!games().length) {
+        <p class="muted">Noch keine Spiele.</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>PIN</th>
+                <th>Datum</th>
+                <th>Phase</th>
+                <th>Teams</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (game of games(); track game.code) {
+                <tr>
+                  <td>{{ game.code }}</td>
+                  <td>{{ when(game.createdAt) }}</td>
+                  <td>{{ titles[game.game] }}</td>
+                  <td>{{ game.teamCount }}</td>
+                  <td>{{ game.finished ? 'Beendet' : 'Offen' }}</td>
+                  <td class="actions">
+                    <button type="button" class="btn ghost" (click)="openGame(game)">
+                      Öffnen
+                    </button>
+                    <button
+                      type="button"
+                      class="btn ghost danger"
+                      [disabled]="busy()"
+                      (click)="deleteGame(game)"
+                    >
+                      Löschen
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
+</main>
