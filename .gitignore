@@ -18,6 +18,13 @@ counts/
 *.db
 
 *.html
+!app/**/*.html
+
+.DS_Store
+node_modules/
+.angular/
+dist/
+
 ".sw*
 *_files
 *_cache
