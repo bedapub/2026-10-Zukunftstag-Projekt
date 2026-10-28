@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:db": "DATABASE_URL=postgres://zukunftstag:zukunftstag@127.0.0.1:5432/zukunftstag ng serve --host 0.0.0.0",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -21,6 +22,7 @@
     "@angular/router": "^22.2.3",
     "@angular/ssr": "^22.2.4",
     "express": "^5.1.0",
+    "postgres": "^3.4.9",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
