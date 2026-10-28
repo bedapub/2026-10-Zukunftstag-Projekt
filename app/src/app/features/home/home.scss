@@ -1,0 +1,64 @@
+.hero {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.hero h1 {
+  font-size: 1.8rem;
+}
+
+.join-box {
+  width: min(360px, 100%);
+  margin: 24px auto 0;
+  display: grid;
+  gap: 8px;
+}
+
+.host-corner {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  max-width: 220px;
+}
+
+.host-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--grey-2);
+  font-size: 0.8rem;
+}
+
+.host-link:hover {
+  color: var(--roche-navy);
+}
+
+@media (max-width: 800px) {
+  .hero {
+    padding: 24px 16px;
+  }
+
+  .hero h1 {
+    font-size: 1.45rem;
+  }
+
+  .join-box {
+    margin-top: 20px;
+  }
+
+  .join-box input {
+    text-align: center;
+    font-size: 1.35rem;
+    letter-spacing: 0.14em;
+    min-height: 52px;
+  }
+
+  .join-box .btn {
+    width: 100%;
+  }
+
+  .host-corner {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}

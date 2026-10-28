@@ -1,0 +1,26 @@
+<app-roche-header />
+<main class="page home">
+  <section class="hero card">
+    <h1>Mathe Macht Medikamente</h1>
+    <form class="join-box" (submit)="$event.preventDefault(); join()">
+      <label class="field">
+        <span>PIN</span>
+        <input
+          inputmode="numeric"
+          maxlength="8"
+          placeholder="123456"
+          [value]="pin()"
+          (input)="pin.set($any($event.target).value)"
+        />
+      </label>
+      <button class="btn" type="submit" [disabled]="busy()">Beitreten</button>
+    </form>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+  </section>
+</main>
+
+<div class="host-corner">
+  <button class="host-link" type="button" (click)="goHost()">Moderator</button>
+</div>

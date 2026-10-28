@@ -1,0 +1,75 @@
+<app-roche-header subtitle="Team beitreten" />
+<main class="page">
+  <form class="card join-form" (submit)="$event.preventDefault(); submit()">
+    <h1>Team beitreten</h1>
+
+    @if (!code()) {
+      <label class="field">
+        <span>PIN</span>
+        <input
+          inputmode="numeric"
+          [value]="pin()"
+          (input)="pin.set($any($event.target).value)"
+        />
+      </label>
+    } @else {
+      <p class="pin">{{ code() }}</p>
+    }
+
+    <label class="field">
+      <span>Teamname</span>
+      <input
+        list="roche-teams"
+        placeholder="z.B. Herceptin"
+        [value]="teamName()"
+        (input)="teamName.set($any($event.target).value)"
+      />
+      <datalist id="roche-teams">
+        @for (team of teams; track team.name) {
+          <option [value]="team.name">{{ team.indication }}</option>
+        }
+      </datalist>
+    </label>
+
+    <section>
+      <h2>Eltern</h2>
+      @for (row of parents(); track row.id) {
+        <div class="name-row">
+          <input
+            [value]="row.value"
+            placeholder="Vorname"
+            (input)="setName('parent', row.id, $any($event.target).value)"
+          />
+          <button type="button" class="btn secondary" (click)="remove('parent', row.id)">
+            –
+          </button>
+        </div>
+      }
+      <button type="button" class="btn secondary" (click)="add('parent')">
+        + Elternteil
+      </button>
+    </section>
+
+    <section>
+      <h2>Kinder</h2>
+      @for (row of children(); track row.id) {
+        <div class="name-row">
+          <input
+            [value]="row.value"
+            placeholder="Vorname"
+            (input)="setName('child', row.id, $any($event.target).value)"
+          />
+          <button type="button" class="btn secondary" (click)="remove('child', row.id)">
+            –
+          </button>
+        </div>
+      }
+      <button type="button" class="btn secondary" (click)="add('child')">+ Kind</button>
+    </section>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+    <button class="btn" type="submit" [disabled]="busy()">Beitreten</button>
+  </form>
+</main>

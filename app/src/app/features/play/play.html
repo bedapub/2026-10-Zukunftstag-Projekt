@@ -1,0 +1,172 @@
+<app-roche-header [subtitle]="session()?.game === 'done' ? 'Ende' : team()?.name || 'Team'" />
+<main class="play">
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (!team()) {
+    <section class="waiting">
+      <h2>Team nicht gefunden</h2>
+    </section>
+  } @else if (session(); as s) {
+    @if (s.game === 'lobby') {
+      <section class="waiting">
+        <h1>{{ team()?.name }}</h1>
+        <p>Warten auf Start…</p>
+      </section>
+    } @else if (s.game === 'heights' && s.stage === 'play') {
+      <section class="sheet">
+        <h1>Körpergrösse (cm)</h1>
+        @for (person of team()?.people ?? []; track person.id) {
+          <label class="field">
+            <span>{{ person.name }} ({{ person.role === 'parent' ? 'Eltern' : 'Kind' }})</span>
+            <input
+              type="number"
+              min="50"
+              max="230"
+              [value]="heights()[person.id] ?? ''"
+              (input)="setHeight(person.id, $any($event.target).value)"
+            />
+          </label>
+        }
+        <button class="btn" (click)="sendHeights()">Senden</button>
+      </section>
+    } @else if (s.game === 'circumference' && s.stage === 'play') {
+      <section class="sheet">
+        <h1>Zimmerumfang (m)</h1>
+        @for (person of team()?.people ?? []; track person.id) {
+          <label class="field">
+            <span>{{ person.name }}</span>
+            <input
+              type="number"
+              min="1"
+              step="0.1"
+              [value]="guesses()[person.id] ?? ''"
+              (input)="setGuess(person.id, $any($event.target).value)"
+            />
+          </label>
+        }
+        <button class="btn" (click)="sendUmfang()">Senden</button>
+      </section>
+    } @else if (s.game === 'memory' && s.stage === 'show') {
+      <section class="waiting">
+        <h1>Schaut nach vorne</h1>
+      </section>
+    } @else if (s.game === 'memory' && s.stage === 'play' && round(); as round) {
+      <section class="sheet">
+        <h1>Welche Struktur war es?</h1>
+        <div class="mol-grid">
+          @for (option of round.options; track option.label) {
+            <button
+              class="mol-choice"
+              [class.selected]="myMemory()?.choice === option.label"
+              type="button"
+              (click)="sendMemory(option.label)"
+            >
+              <span class="choice {{ option.label }} mini">{{ option.label }}</span>
+              <span class="mol-frame">
+                <img
+                  [src]="moleculeImage(option.cid)"
+                  [alt]="option.label"
+                  [style.transform]="moleculeTransform(s.memoryRound, option.cid, round.promptCid)"
+                />
+              </span>
+            </button>
+          }
+        </div>
+        @if (myMemory()) {
+          <p>Eure Antwort: {{ myMemory()?.choice }}</p>
+        }
+      </section>
+    } @else if (s.game === 'study' && s.stage === 'play') {
+      <section class="sheet">
+        <h1>Klinische Studie</h1>
+        @for (person of team()?.people ?? []; track person.id) {
+          <article class="person-card">
+            <h2>{{ person.name }}</h2>
+            <p class="field"><span>Schokolade</span></p>
+            <div class="choice-grid tiny">
+              <button
+                class="choco red"
+                type="button"
+                [class.selected]="study()[person.id]?.color === 'red'"
+                (click)="setStudy(person.id, { color: 'red' })"
+              >
+                Rot
+              </button>
+              <button
+                class="choco black"
+                type="button"
+                [class.selected]="study()[person.id]?.color === 'black'"
+                (click)="setStudy(person.id, { color: 'black' })"
+              >
+                Schwarz
+              </button>
+            </div>
+            <p class="field"><span>Schmerz vorher</span></p>
+            <div class="pain">
+              @for (n of painScale; track n) {
+                <button
+                  type="button"
+                  class="btn"
+                  [class.secondary]="study()[person.id]?.before !== n"
+                  (click)="setStudy(person.id, { before: n })"
+                >
+                  {{ n }}
+                </button>
+              }
+            </div>
+            <p class="field"><span>Schmerz nachher</span></p>
+            <div class="pain">
+              @for (n of painScale; track n) {
+                <button
+                  type="button"
+                  class="btn"
+                  [class.secondary]="study()[person.id]?.after !== n"
+                  (click)="setStudy(person.id, { after: n })"
+                >
+                  {{ n }}
+                </button>
+              }
+            </div>
+          </article>
+        }
+        <button class="btn" (click)="sendStudy()">Senden</button>
+      </section>
+    } @else if (s.game === 'feedback') {
+      <section class="sheet">
+        <h1>Wie hat's gefallen?</h1>
+        <div class="stars">
+          @for (n of stars; track n) {
+            <button
+              type="button"
+              class="btn"
+              [class.secondary]="rating() !== n"
+              (click)="pickRating(n)"
+            >
+              {{ n }}
+            </button>
+          }
+        </div>
+        <label class="field">
+          <span>Kommentar (optional)</span>
+          <textarea [value]="comment()" (input)="comment.set($any($event.target).value)"></textarea>
+        </label>
+        <button class="btn" type="button" (click)="sendFeedback()">Senden</button>
+      </section>
+    } @else if (s.game === 'done') {
+      <section class="waiting">
+        <h1>Spiel wurde beendet</h1>
+        <p>Danke fürs Mitmachen.</p>
+        <button class="btn" type="button" (click)="goHome()">Zur Startseite</button>
+      </section>
+    } @else {
+      <section class="waiting">
+        <h1>Schaut nach vorne</h1>
+      </section>
+    }
+
+    @if (saved() && s.game !== 'done') {
+      <p class="ok">Gespeichert</p>
+    }
+  }
+</main>
