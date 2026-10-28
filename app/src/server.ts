@@ -30,6 +30,11 @@ const indexHtml = existsSync(join(browserDistFolder, 'index.html'))
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+app.set('trust proxy', 1);
+
+app.get(['/health', '/api/health'], (_req, res) => {
+  res.status(200).json({ ok: true });
+});
 
 app.use('/api', express.json(), (req, res, next) => {
   Promise.resolve()
@@ -162,14 +167,14 @@ app.use((req, res, next) => {
 });
 
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  const port = process.env['PORT'] || 4200;
+  const port = Number(process.env['PORT'] || 80);
   void initDatabase()
     .then(() => {
-      app.listen(port, (error) => {
+      app.listen(port, '0.0.0.0', (error) => {
         if (error) {
           throw error;
         }
-        console.log(`Node Express server listening on http://localhost:${port}`);
+        console.log(`Node Express server listening on http://0.0.0.0:${port}`);
       });
     })
     .catch((error: unknown) => {
