@@ -21,6 +21,7 @@ counts/
 !app/**/*.html
 
 .DS_Store
+.env
 node_modules/
 .angular/
 dist/
