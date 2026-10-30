@@ -68,30 +68,8 @@
       </section>
     }
     @if (s.game === 'heights' && s.stage === 'results') {
-      <section class="split">
-        <div class="panel">
-          <h2>Verteilung in 5-cm-Schritten</h2>
-          <div class="box fill">
-            <p>Median: {{ fmt(heightMedian()) }} cm</p>
-            <app-histogram [bins]="heightBins()" />
-          </div>
-        </div>
-        <div class="panel">
-          <h2>Median</h2>
-          <div class="box fill">
-            <div class="compare">
-              <div class="stat child">
-                <span>Kinder</span>
-                <b>{{ fmt(heightChildMedian()) }} cm</b>
-              </div>
-              <div class="stat parent">
-                <span>Eltern</span>
-                <b>{{ fmt(heightParentMedian()) }} cm</b>
-              </div>
-            </div>
-            <app-bars [rows]="heightCompareRows()" />
-          </div>
-        </div>
+      <section class="charts">
+        <ng-container [ngTemplateOutlet]="chartGallery" />
       </section>
     }
 
@@ -104,34 +82,8 @@
       </section>
     }
     @if (s.game === 'circumference' && s.stage === 'results') {
-      <section class="split">
-        <div class="panel">
-          <h2>Schätzungen</h2>
-          <div class="box fill">
-            <p>Median: {{ fmt(umfangMedian()) }} m</p>
-            <app-strip [points]="umfang()" [mark]="s.umfangTruth" markLabel="Wahrheit" />
-          </div>
-        </div>
-        <div class="panel">
-          <h2>Am nächsten dran</h2>
-          <div class="box fill">
-            <ol class="podium">
-              @for (row of winners(); track $index) {
-                <li>
-                  <b>{{ $index + 1 }}</b>
-                  <div>
-                    <strong>{{ row.personName }}</strong>
-                    <span>{{ row.teamName }}</span>
-                  </div>
-                  <em>{{ row.value }} m</em>
-                  <small>
-                    {{ row.delta === 0 ? 'genau richtig' : row.delta + ' m daneben' }}
-                  </small>
-                </li>
-              }
-            </ol>
-          </div>
-        </div>
+      <section class="charts">
+        <ng-container [ngTemplateOutlet]="chartGallery" />
       </section>
     }
 
@@ -164,20 +116,9 @@
         </section>
       }
       @if (s.stage === 'results') {
-        <section class="split">
-          <div class="panel">
-            <h2>Antworten Runde {{ s.memoryRound + 1 }}</h2>
-            <div class="box">
-              <p>Richtig: {{ round.correctLabel }} — {{ round.name }}</p>
-              <app-bars [rows]="memoryVoteRows()" />
-            </div>
-          </div>
-          <div class="panel">
-            <h2>Punkte</h2>
-            <div class="box">
-              <app-bars [rows]="memoryScoreRows()" />
-            </div>
-          </div>
+        <section class="charts">
+          <h2>Runde {{ s.memoryRound + 1 }} · Richtig: {{ round.correctLabel }} — {{ round.name }}</h2>
+          <ng-container [ngTemplateOutlet]="chartGallery" />
         </section>
       }
     }
@@ -191,21 +132,17 @@
       </section>
     }
     @if (s.game === 'study' && s.stage === 'results') {
-      <section class="stage center">
+      <section class="charts">
         <h1>{{ s.studyDrugColor === 'red' ? 'Rot' : 'Schwarz' }} war das Medikament</h1>
-        @if (hasStudyPlot()) {
-          <app-boxplot [boxes]="studyBoxes()" />
-        }
+        <ng-container [ngTemplateOutlet]="chartGallery" />
       </section>
     }
 
     @if (s.game === 'feedback') {
-      <section class="stage center">
+      <section class="charts">
         <h1>Feedback</h1>
         <p>{{ s.feedback.length }} von {{ s.teams.length }} Teams haben bewertet.</p>
-        <div class="box">
-          <app-bars [rows]="feedbackRows()" />
-        </div>
+        <ng-container [ngTemplateOutlet]="chartGallery" />
       </section>
     }
 
@@ -223,6 +160,27 @@
             <button type="button" class="text-link" (click)="exportJson()">JSON</button>
           </p>
         </header>
+
+        @for (group of recapGroups(); track group.title) {
+          <div>
+            <h2>{{ group.title }}</h2>
+            <div
+              class="split"
+              [class.one]="group.charts.length === 1"
+              [class.two]="group.charts.length === 2"
+              [class.three]="group.charts.length >= 3"
+            >
+              @for (chart of group.charts; track chart.id) {
+                <div class="box fill chart-card recap-chart">
+                  <p class="chart-label">{{ chart.label }}</p>
+                  <div class="chart-frame">
+                    <app-plotly [figure]="chart.figure" />
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <div>
           <h2>Körpergrösse & Zimmerumfang</h2>
@@ -365,3 +323,25 @@
   }
 </main>
 </div>
+
+<ng-template #chartGallery>
+  @if (!charts().length) {
+    <p class="muted">Noch keine Daten</p>
+  } @else {
+    <div
+      class="split"
+      [class.one]="charts().length === 1"
+      [class.two]="charts().length === 2"
+      [class.three]="charts().length >= 3"
+    >
+      @for (chart of charts(); track chart.id) {
+        <div class="box fill chart-card">
+          <p class="chart-label">{{ chart.label }}</p>
+          <div class="chart-frame">
+            <app-plotly [figure]="chart.figure" />
+          </div>
+        </div>
+      }
+    </div>
+  }
+</ng-template>

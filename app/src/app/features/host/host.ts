@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -13,27 +14,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { interval } from 'rxjs';
 import { moleculeImage, moleculeTransform } from '../../core/models/content';
+import { chartsForGame, recapChartGroups } from '../../core/models/charts';
 import { GAME_TITLES, HostSession, Person } from '../../core/models/session';
-import {
-  buildRecap,
-  closestUmfang,
-  heightValues,
-  histogram,
-  median,
-  memoryScores,
-  memoryVotes,
-  recapCsv,
-  round1,
-  studyDeltas,
-  umfangValues,
-} from '../../core/models/stats';
+import { buildRecap, recapCsv } from '../../core/models/stats';
 import { SessionApi } from '../../core/services/session-api';
 import { RocheHeader } from '../../shared/components/roche-header';
-import { BarList, BoxPlot, HistogramChart, StripPlot } from '../../shared/components/viz';
+import { PlotlyChart } from '../../shared/components/plotly-chart';
 
 @Component({
   selector: 'app-host',
-  imports: [RocheHeader, HistogramChart, BarList, BoxPlot, StripPlot],
+  imports: [RocheHeader, PlotlyChart, NgTemplateOutlet],
   templateUrl: './host.html',
   styleUrl: './host.scss',
   encapsulation: ViewEncapsulation.None,
@@ -75,68 +65,14 @@ export class HostPage {
     () =>
       `https://api.qrserver.com/v1/create-qr-code/?size=800x800&color=0b41cd&bgcolor=ffffff&data=${encodeURIComponent(this.joinUrl())}`,
   );
-  protected readonly heights = computed(() =>
-    this.session() ? heightValues(this.session()!) : [],
-  );
-  protected readonly umfang = computed(() =>
-    this.session() ? umfangValues(this.session()!) : [],
-  );
-  protected readonly heightBins = computed(() => histogram(this.heights(), 5));
-  protected readonly heightMedian = computed(() => median(this.heights().map((v) => v.value)));
-  protected readonly heightChildMedian = computed(() =>
-    median(this.heights().filter((item) => item.role === 'child').map((item) => item.value)),
-  );
-  protected readonly heightParentMedian = computed(() =>
-    median(this.heights().filter((item) => item.role === 'parent').map((item) => item.value)),
-  );
-  protected readonly heightCompareRows = computed(() => {
-    const child = this.heightChildMedian();
-    const parent = this.heightParentMedian();
-    return [
-      ...(child == null ? [] : [{ label: 'Kinder', value: round1(child), tone: 'gold' }]),
-      ...(parent == null ? [] : [{ label: 'Eltern', value: round1(parent) }]),
-    ];
-  });
-  protected readonly umfangMedian = computed(() => median(this.umfang().map((v) => v.value)));
-  protected readonly winners = computed(() => {
+  protected readonly charts = computed(() => {
     const session = this.session();
-    if (!session) return [];
-    return closestUmfang(this.umfang(), session.umfangTruth, 3).map((row) => ({
-      ...row,
-      delta: round1(Math.abs(row.value - session.umfangTruth)),
-    }));
+    return session ? chartsForGame(session) : [];
   });
-  protected readonly memoryVoteRows = computed(() => {
+  protected readonly recapGroups = computed(() => {
     const session = this.session();
-    if (!session) return [];
-    const votes = memoryVotes(session.memory, session.memoryRound);
-    return Object.entries(votes).map(([label, value]) => ({ label, value }));
+    return session?.game === 'done' ? recapChartGroups(session) : [];
   });
-  protected readonly memoryScoreRows = computed(() => {
-    const session = this.session();
-    if (!session) return [];
-    return memoryScores(session).map((row) => ({
-      label: `${row.teamName} (${row.correct})`,
-      value: row.correct,
-      tone: 'gold',
-    }));
-  });
-  protected readonly feedbackRows = computed(() => {
-    const feedback = this.session()?.feedback ?? [];
-    return [1, 2, 3, 4, 5].map((n) => ({
-      label: `${n} Sterne`,
-      value: feedback.filter((item) => item.rating === n).length,
-      tone: 'gold',
-    }));
-  });
-  protected readonly studyBoxes = computed(() => {
-    const session = this.session();
-    if (!session) return [];
-    return studyDeltas(session.study, session.studyDrugColor);
-  });
-  protected readonly hasStudyPlot = computed(() =>
-    this.studyBoxes().some((box) => box.values.length > 0),
-  );
   protected readonly currentRound = computed(() => {
     const session = this.session();
     return session?.memoryRounds[session.memoryRound];
@@ -229,10 +165,6 @@ export class HostPage {
       feedback: session.feedback.length,
     };
     return `${counts[session.game] ?? total} / ${total}`;
-  }
-
-  protected fmt(value: number | null): string {
-    return value == null ? '–' : String(round1(value));
   }
 
   protected exportCsv(): void {

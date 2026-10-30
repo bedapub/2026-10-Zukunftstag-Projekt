@@ -167,6 +167,108 @@ export function memoryScores(session: PublicSession): { teamName: string; correc
     .sort((a, b) => b.correct - a.correct);
 }
 
+export interface TeamPair {
+  teamName: string;
+  parentName: string;
+  childName: string;
+  parentValue: number;
+  childValue: number;
+}
+
+export function pairByTeam(items: NamedValue[]): TeamPair[] {
+  const byTeam = new Map<string, { parent?: NamedValue; child?: NamedValue }>();
+  for (const item of items) {
+    const row = byTeam.get(item.teamName) ?? {};
+    if (item.role === 'parent') row.parent = item;
+    else row.child = item;
+    byTeam.set(item.teamName, row);
+  }
+  const out: TeamPair[] = [];
+  for (const [teamName, row] of byTeam) {
+    if (!row.parent || !row.child) continue;
+    out.push({
+      teamName,
+      parentName: row.parent.personName,
+      childName: row.child.personName,
+      parentValue: row.parent.value,
+      childValue: row.child.value,
+    });
+  }
+  return out;
+}
+
+export interface MemoryVoteBucket {
+  label: 'A' | 'B' | 'C' | 'D';
+  count: number;
+  teams: string[];
+  correct: boolean;
+}
+
+export function memoryVoteBuckets(
+  session: PublicSession,
+  round: number,
+): MemoryVoteBucket[] {
+  const labels = ['A', 'B', 'C', 'D'] as const;
+  const correct = session.memoryRounds[round]?.correctLabel;
+  return labels.map((label) => {
+    const answers = session.memory.filter(
+      (item) => item.round === round && item.choice === label,
+    );
+    const teams = answers.map(
+      (item) => session.teams.find((team) => team.id === item.teamId)?.name ?? item.teamId,
+    );
+    return { label, count: answers.length, teams, correct: label === correct };
+  });
+}
+
+export interface ScoreBucket {
+  score: number;
+  count: number;
+  teams: string[];
+}
+
+export function memoryScoreBuckets(session: PublicSession): ScoreBucket[] {
+  const scores = memoryScores(session);
+  const max = session.memoryRounds.length;
+  return Array.from({ length: max + 1 }, (_, score) => {
+    const teams = scores.filter((item) => item.correct === score).map((item) => item.teamName);
+    return { score, count: teams.length, teams };
+  });
+}
+
+export interface StudyPersonRow {
+  teamName: string;
+  personName: string;
+  personId: string;
+  role: Person['role'];
+  before: number;
+  after: number;
+  treatment: 'drug' | 'placebo';
+}
+
+export function studyPeople(session: PublicSession): StudyPersonRow[] {
+  const people = personMap(session);
+  const out: StudyPersonRow[] = [];
+  for (const answer of session.study) {
+    const team = session.teams.find((item) => item.id === answer.teamId);
+    if (!team) continue;
+    for (const entry of answer.entries) {
+      const person = people.get(entry.personId);
+      if (!person) continue;
+      out.push({
+        teamName: team.name,
+        personName: person.name,
+        personId: person.id,
+        role: person.role,
+        before: entry.before,
+        after: entry.after,
+        treatment: entry.color === session.studyDrugColor ? 'drug' : 'placebo',
+      });
+    }
+  }
+  return out;
+}
+
 export function studyDeltas(
   answers: StudyAnswer[],
   drugColor: ChocolateColor,

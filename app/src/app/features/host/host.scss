@@ -10,7 +10,7 @@ app-host,
 .host-screen {
   --host: clamp(16px, 2.4vmin, 42px);
   --header-h: 64px;
-  --inset: clamp(24px, 3.2vmin, 40px);
+  --inset: clamp(36px, 5vmin, 72px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -130,8 +130,20 @@ app-host,
 .host-screen .split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3vmin;
+  gap: clamp(1.2rem, 3.2vmin, 2.4rem);
   min-height: 0;
+}
+
+.host-screen .split.one {
+  grid-template-columns: 1fr;
+}
+
+.host-screen .split.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.host-screen .split.three {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .host-screen .box {
@@ -163,21 +175,75 @@ app-host,
   text-align: center;
 }
 
-.host-screen .box app-histogram,
-.host-screen .box app-strip,
-.host-screen .box app-bars {
-  display: block;
+.host-screen .charts {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.8em;
+  min-height: 0;
   width: 100%;
-  max-width: none;
-  height: auto;
+  padding: 0.4em 0 1.2em;
 }
 
-.host-screen .box app-boxplot,
-.host-screen app-boxplot {
+.host-screen .charts h1,
+.host-screen .charts h2 {
+  text-align: center;
+  margin-bottom: 0.15em;
+}
+
+.host-screen .charts .split {
+  flex: 0 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.host-screen .chart-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.55em 0.75em 0.45em;
+}
+
+.host-screen .chart-label {
+  margin: 0 0 0.15em;
+  text-align: center;
+  font-weight: 700;
+  color: var(--roche-dark-blue);
+  font-size: 0.95em;
+}
+
+.host-screen .chart-frame {
+  width: 100%;
+  height: min(38vh, 20em);
+  min-height: 13em;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.host-screen .split.three .chart-frame {
+  height: min(34vh, 18em);
+}
+
+.host-screen .chart-frame app-plotly,
+.host-screen .recap-chart app-plotly {
   display: block;
-  width: min(70vmin, 40em);
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 100%;
+}
+
+.host-screen .recap .split {
+  margin-top: 0.4em;
+}
+
+.host-screen .recap .split.one {
+  grid-template-columns: 1fr;
+}
+
+.host-screen .recap-chart .chart-frame {
+  height: min(28vh, 16em);
+  min-height: 12em;
 }
 
 .host-screen .compare {
@@ -209,14 +275,6 @@ app-host,
   color: #022366;
 }
 
-.host-screen app-bars .row {
-  font-size: 1.35em;
-  margin-bottom: 0.7em;
-}
-
-.host-screen app-bars .track {
-  height: 1.5em;
-}
 
 .host-screen .podium {
   list-style: none;
@@ -471,7 +529,9 @@ app-host,
     font-size: 1.15em;
   }
 
-  .host-screen .split {
+  .host-screen .split,
+  .host-screen .split.two,
+  .host-screen .split.three {
     grid-template-columns: 1fr;
     gap: 16px;
   }
@@ -506,11 +566,9 @@ app-host,
     gap: 8px;
   }
 
-  .host-screen .box app-histogram,
-  .host-screen .box app-strip,
-  .host-screen .box app-boxplot,
-  .host-screen app-boxplot,
-  .host-screen .box app-bars {
+  .host-screen .chart-frame,
+  .host-screen .recap-chart .chart-frame {
+    height: 18em;
     width: 100%;
   }
 

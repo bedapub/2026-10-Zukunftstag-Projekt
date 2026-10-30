@@ -37,15 +37,16 @@
             "ssr": {
               "entry": "src/server.ts"
             },
-            "externalDependencies": ["postgres"]
+            "externalDependencies": ["postgres"],
+            "allowedCommonJsDependencies": ["plotly.js-cartesian-dist-min"]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
