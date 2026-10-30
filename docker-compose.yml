@@ -23,7 +23,7 @@ services:
       context: ./app
       dockerfile: Dockerfile
     ports:
-      - "4200:80"
+      - "${APP_PORT:-4200}:80"
     expose:
       - "80"
     environment:
