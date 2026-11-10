@@ -69,7 +69,7 @@ export const MEMORY_ROUNDS: MemoryRoundDef[] = [
   },
   {
     name: 'Baloxavir',
-    correct: { cid: 124081897, name: 'Baloxavir marboxil' },
+    correct: { cid: 124081896, name: 'Baloxavir marboxil' },
     decoys: [
       { cid: 65028, name: 'Oseltamivir (Tamiflu)' },
       { cid: 2022, name: 'Aciclovir' },
