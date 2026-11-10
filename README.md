@@ -1,8 +1,8 @@
 Simulation of the workshop *Mathe Macht Medikamente*
 ===
-Jitao David Zhang, Rigani Jegatheeswaran, and David Weber
+Jitao David Zhang, Yannis Stebler, Shania Street, Leander Heiniger
 
-Ein Workshop für [Roche's Zukunftstag 2025](https://www.roche-registration.ch/zukunftstag-2025), in Zusammenarbeit mit dem Verein *WissensZukunft*.
+Ein Workshop für [Roche's Zukunftstag 2026](https://evento.roche.com/en/zukunftstag-2026), in Zusammenarbeit mit dem Verein *WissensZukunft*.
 
 ## Setup the dependencies
 
@@ -43,7 +43,7 @@ When I set up my environment on my personal computer, I used the combination of 
 ## Run the script
 
 ```
-poetry run jupyter-lab 2025-10-Zukunftstag-simulation.ipynb
+poetry run jupyter-lab 2026-11-Zukunftstag-simulation.ipynb
 ```
 
 ## Trouble shooting
