@@ -1,3 +1,5 @@
+import { chartCopy, ChartCopy } from '../i18n/chart-copy';
+import { Lang } from '../i18n/messages';
 import { HostSession, PublicSession } from './session';
 import {
   NamedValue,
@@ -22,6 +24,7 @@ export interface ChartSpec {
   id: string;
   label: string;
   group: string;
+  hint?: string;
   figure: PlotFigure;
 }
 
@@ -46,14 +49,30 @@ const CHOICE_COLORS: Record<string, string> = {
   D: '#bc36f0',
 };
 
+/** Horizontal legend below the plot — avoids overlapping clickable labels. */
+const LEGEND_BELOW = {
+  orientation: 'h' as const,
+  y: -0.2,
+  yanchor: 'top' as const,
+  x: 0.5,
+  xanchor: 'center' as const,
+  font: { size: 11 },
+  bgcolor: 'rgba(255,255,255,0)',
+  borderwidth: 0,
+  entrywidth: 120,
+  entrywidthmode: 'pixels' as const,
+  itemsizing: 'constant' as const,
+  tracegroupgap: 10,
+};
+
 function baseLayout(extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     font: { family: FONT, size: 13, color: '#544f4f' },
     paper_bgcolor: '#ffffff',
     plot_bgcolor: '#ffffff',
-    margin: { t: 12, r: 16, b: 48, l: 52 },
+    margin: { t: 12, r: 16, b: 64, l: 52 },
     hovermode: 'closest',
-    legend: { orientation: 'h', y: 1.08, x: 0.5, xanchor: 'center', font: { size: 11 } },
+    legend: LEGEND_BELOW,
     title: { font: { size: 15, family: FONT, color: '#022366' }, x: 0.5, xanchor: 'center' },
     ...extra,
   };
@@ -115,6 +134,7 @@ function splitHistogram(
   xTitleChild: string,
   xTitleParent: string,
   yTitle: string,
+  t: ChartCopy = chartCopy('de'),
 ): PlotFigure | null {
   const childValues = child.map((item) => item.value);
   const parentValues = parent.map((item) => item.value);
@@ -153,7 +173,7 @@ function splitHistogram(
     x: [null],
     y: [null],
     mode: 'lines',
-    name: 'Median',
+    name: t.median,
     line: { color: MEDIAN_COLOR, width: 3, dash: 'dash' },
   };
   return {
@@ -164,7 +184,7 @@ function splitHistogram(
         autobinx: false,
         xbins: sharedBins,
         marker: { color: CHILD_FILL, line: { color: EDGE, width: 3 } },
-        hovertemplate: 'Frequenz: %{y}<extra></extra>',
+        hovertemplate: `${t.hoverFreq}: %{y}<extra></extra>`,
         showlegend: false,
         xaxis: 'x',
         yaxis: 'y',
@@ -187,7 +207,7 @@ function splitHistogram(
         autobinx: false,
         xbins: sharedBins,
         marker: { color: PARENT_FILL, line: { color: EDGE, width: 3 } },
-        hovertemplate: 'Frequenz: %{y}<extra></extra>',
+        hovertemplate: `${t.hoverFreq}: %{y}<extra></extra>`,
         showlegend: false,
         xaxis: 'x2',
         yaxis: 'y2',
@@ -209,23 +229,36 @@ function splitHistogram(
     layout: baseLayout({
       grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
       yaxis: {
-        title: `${yTitle} · Kind`,
+        title: `${yTitle} · ${t.child}`,
         rangemode: 'tozero',
         dtick: 1,
         range: [0, Math.max(4, Math.ceil(Math.max(childValues.length, parentValues.length) * 0.5) + 1)],
+        automargin: true,
       },
       yaxis2: {
-        title: `${yTitle} · Eltern`,
+        title: `${yTitle} · ${t.parents}`,
         matches: 'y',
         rangemode: 'tozero',
         dtick: 1,
+        automargin: true,
       },
-      xaxis: { title: xTitleChild, tickangle: 0, automargin: true, range: [xMin, xMax], matches: 'x2' },
-      xaxis2: { title: xTitleParent, tickangle: 0, automargin: true, range: [xMin, xMax] },
+      xaxis: {
+        title: xTitleChild,
+        tickangle: 0,
+        automargin: true,
+        range: [xMin, xMax],
+        matches: 'x2',
+      },
+      xaxis2: {
+        title: xTitleParent,
+        tickangle: 0,
+        automargin: true,
+        range: [xMin, xMax],
+      },
       shapes,
       showlegend: true,
-      legend: { orientation: 'h', y: 1.12, x: 0.5, xanchor: 'center', font: { size: 11 } },
-      margin: { t: 28, r: 12, b: 48, l: 52 },
+      legend: LEGEND_BELOW,
+      margin: { t: 12, r: 12, b: 56, l: 52 },
     }),
   };
 }
@@ -236,6 +269,7 @@ function splitBox(
   yTitle: string,
   unit: string,
   hlines: { value: number; color: string; dash: string; label: string }[] = [],
+  t: ChartCopy = chartCopy('de'),
 ): PlotFigure | null {
   if (!child.length && !parent.length) return null;
   const traces: Record<string, unknown>[] = [];
@@ -287,8 +321,8 @@ function splitBox(
       });
     }
   };
-  addPanel(child, 'Kind', CHILD_POINT, { x: 'x', y: 'y' });
-  addPanel(parent, 'Eltern', PARENT_POINT, { x: 'x2', y: 'y2' });
+  addPanel(child, t.child, CHILD_POINT, { x: 'x', y: 'y' });
+  addPanel(parent, t.parents, PARENT_POINT, { x: 'x2', y: 'y2' });
   const shapes = hlines.flatMap((line) => [
     {
       type: 'line',
@@ -324,12 +358,13 @@ function splitBox(
     layout: baseLayout({
       grid: { rows: 1, columns: 2, pattern: 'independent' },
       yaxis: { title: yTitle, automargin: true },
-      yaxis2: { matches: 'y' },
-      xaxis: { title: '', tickvals: [1], ticktext: ['Kind'] },
-      xaxis2: { title: '', tickvals: [1], ticktext: ['Eltern'] },
-      margin: { t: 8, r: 8, b: 36, l: 48 },
+      yaxis2: { title: yTitle, matches: 'y', automargin: true },
+      xaxis: { title: t.group, tickvals: [1], ticktext: [t.child], automargin: true },
+      xaxis2: { title: t.group, tickvals: [1], ticktext: [t.parents], automargin: true },
+      margin: { t: 8, r: 8, b: dummy.length > 0 ? 64 : 48, l: 52 },
       shapes,
       showlegend: dummy.length > 0,
+      legend: LEGEND_BELOW,
     }),
   };
 }
@@ -345,7 +380,12 @@ function scatterPairs(
     childMedian?: number | null;
     regression?: boolean;
     range?: [number, number];
+    equalAxes?: boolean;
+    diagonal?: boolean;
+    diagonalLabel?: string;
+    pointName?: string;
   } = {},
+  t: ChartCopy = chartCopy('de'),
 ): PlotFigure | null {
   if (!pairs.length) return null;
   const xs = pairs.map((item) => item.parentValue);
@@ -356,7 +396,7 @@ function scatterPairs(
       x: xs,
       y: ys,
       mode: 'markers',
-      name: 'Team',
+      name: options.pointName ?? t.team,
       marker: { size: 12, color: SCATTER_POINT },
       customdata: pairs.map((item) => [
         item.teamName,
@@ -366,8 +406,8 @@ function scatterPairs(
         item.childValue,
       ]),
       hovertemplate:
-        `<b>%{customdata[0]}</b><br>%{customdata[1]}: %{customdata[2]} ${unit}` +
-        `<br>%{customdata[3]}: %{customdata[4]} ${unit}<extra></extra>`,
+        `<b>%{customdata[0]}</b><br>${t.parents} (%{customdata[1]}): %{customdata[2]} ${unit}` +
+        `<br>${t.child} (%{customdata[3]}): %{customdata[4]} ${unit}<extra></extra>`,
     },
   ];
   const shapes: Record<string, unknown>[] = [];
@@ -386,7 +426,7 @@ function scatterPairs(
       x: [null],
       y: [null],
       mode: 'lines',
-      name: `Median (Eltern): ${round1(options.parentMedian)} ${unit}`,
+      name: t.medianParent,
       line: { color: PARENT_FILL, width: 3, dash: 'dash' },
     });
   }
@@ -405,7 +445,7 @@ function scatterPairs(
       x: [null],
       y: [null],
       mode: 'lines',
-      name: `Median (Kind): ${round1(options.childMedian)} ${unit}`,
+      name: t.medianChild,
       line: { color: CHILD_POINT, width: 3, dash: 'dash' },
     });
   }
@@ -417,48 +457,61 @@ function scatterPairs(
         x: fit.x,
         y: fit.y,
         mode: 'lines',
-        name: 'Fit (Regression)',
+        name: t.fit,
         line: { color: FIT_COLOR, width: 3 },
       });
     }
   }
-  const [lo, hi] = options.range ?? valueRange([...xs, ...ys], 2);
-  shapes.push({
-    type: 'line',
-    x0: lo,
-    x1: hi,
-    y0: lo,
-    y1: hi,
-    line: { color: '#706b69', width: 2, dash: 'dot' },
-  });
-  traces.push({
-    type: 'scatter',
-    x: [null],
-    y: [null],
-    mode: 'lines',
-    name: 'Diagonale',
-    line: { color: '#706b69', width: 2, dash: 'dot' },
-  });
+  const xRange = options.range ?? valueRange(xs, 2);
+  const yRange = options.equalAxes ? xRange : valueRange(ys, 2);
+  const [lo, hi] = options.equalAxes
+    ? (options.range ?? valueRange([...xs, ...ys], 2))
+    : [Math.min(xRange[0], yRange[0]), Math.max(xRange[1], yRange[1])];
+  const axisX = options.equalAxes ? ([lo, hi] as [number, number]) : xRange;
+  const axisY = options.equalAxes ? ([lo, hi] as [number, number]) : yRange;
+  if (options.diagonal !== false) {
+    const diagLo = Math.max(axisX[0], axisY[0]);
+    const diagHi = Math.min(axisX[1], axisY[1]);
+    if (diagHi > diagLo) {
+      shapes.push({
+        type: 'line',
+        x0: diagLo,
+        x1: diagHi,
+        y0: diagLo,
+        y1: diagHi,
+        line: { color: '#706b69', width: 2, dash: 'dot' },
+      });
+      traces.push({
+        type: 'scatter',
+        x: [null],
+        y: [null],
+        mode: 'lines',
+        name: options.diagonalLabel ?? t.sameSize,
+        line: { color: '#706b69', width: 2, dash: 'dot' },
+      });
+    }
+  }
   return {
     data: traces,
     layout: baseLayout({
       title: options.title,
-      xaxis: { title: xTitle, zeroline: false, range: [lo, hi], automargin: true },
+      xaxis: { title: xTitle, zeroline: false, range: axisX, automargin: true },
       yaxis: {
         title: yTitle,
         zeroline: false,
-        range: [lo, hi],
-        scaleanchor: 'x',
-        scaleratio: 1,
+        range: axisY,
+        ...(options.equalAxes ? { scaleanchor: 'x', scaleratio: 1 } : {}),
         automargin: true,
       },
       shapes,
-      showlegend: traces.length > 1,
+      showlegend: true,
+      legend: LEGEND_BELOW,
+      margin: { t: options.title ? 36 : 12, r: 16, b: 78, l: 56 },
     }),
   };
 }
 
-function stackedUmfang(items: NamedValue[], truth: number): PlotFigure | null {
+function stackedUmfang(items: NamedValue[], truth: number, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   if (!items.length) return null;
   const child = roleItems(items, 'child');
   const parent = roleItems(items, 'parent');
@@ -471,20 +524,20 @@ function stackedUmfang(items: NamedValue[], truth: number): PlotFigure | null {
     {
       type: 'histogram',
       x: child.map((item) => item.value),
-      name: 'Kind',
+      name: t.child,
       autobinx: false,
       marker: { color: CHILD_FILL, line: { color: '#363636', width: 1 } },
       xbins: { start: min, size, end: max + size / 100 },
-      hovertemplate: 'Kind: %{y}<extra></extra>',
+      hovertemplate: `${t.child}: %{y}<extra></extra>`,
     },
     {
       type: 'histogram',
       x: parent.map((item) => item.value),
-      name: 'Eltern',
+      name: t.parents,
       autobinx: false,
       marker: { color: PARENT_FILL, line: { color: '#363636', width: 1 } },
       xbins: { start: min, size, end: max + size / 100 },
-      hovertemplate: 'Eltern: %{y}<extra></extra>',
+      hovertemplate: `${t.parents}: %{y}<extra></extra>`,
     },
   ];
   const shapes: Record<string, unknown>[] = [
@@ -529,28 +582,28 @@ function stackedUmfang(items: NamedValue[], truth: number): PlotFigure | null {
     data: traces,
     layout: baseLayout({
       barmode: 'stack',
-      xaxis: { title: 'Umfang [meter]' },
-      yaxis: { title: 'Frequenz', rangemode: 'tozero' },
+      xaxis: { title: t.umfangM, automargin: true },
+      yaxis: { title: t.frequency, rangemode: 'tozero', automargin: true },
       shapes,
     }),
   };
 }
 
-function umfangDeltaFigure(pairs: TeamPair[], truth: number): PlotFigure | null {
+function umfangDeltaFigure(pairs: TeamPair[], truth: number, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   if (!pairs.length) return null;
   const rows = pairs
     .flatMap((pair) => [
       {
-        label: `${pair.teamName} · Eltern`,
+        label: `${pair.teamName} · ${t.parents}`,
         personName: pair.parentName,
-        role: 'Eltern' as const,
+        role: t.parents,
         delta: round1(pair.parentValue - truth),
         color: PARENT_POINT,
       },
       {
-        label: `${pair.teamName} · Kind`,
+        label: `${pair.teamName} · ${t.child}`,
         personName: pair.childName,
-        role: 'Kind' as const,
+        role: t.child,
         delta: round1(pair.childValue - truth),
         color: CHILD_POINT,
       },
@@ -582,7 +635,7 @@ function umfangDeltaFigure(pairs: TeamPair[], truth: number): PlotFigure | null 
         y: rows.filter((row) => winners.has(row.label)).map((row) => row.label),
         mode: 'markers',
         marker: { symbol: 'star', size: 16, color: TRUTH_COLOR },
-        name: 'Top 3',
+        name: t.top3,
         hoverinfo: 'skip',
       },
       {
@@ -591,7 +644,7 @@ function umfangDeltaFigure(pairs: TeamPair[], truth: number): PlotFigure | null 
         y: [null],
         mode: 'markers',
         marker: { size: 10, color: PARENT_POINT },
-        name: 'Eltern',
+        name: t.parents,
       },
       {
         type: 'scatter',
@@ -599,19 +652,20 @@ function umfangDeltaFigure(pairs: TeamPair[], truth: number): PlotFigure | null 
         y: [null],
         mode: 'markers',
         marker: { size: 10, color: CHILD_POINT },
-        name: 'Kind',
+        name: t.child,
       },
     ],
     layout: baseLayout({
-      xaxis: { title: 'Unterschied [meter]', zeroline: true, zerolinewidth: 2 },
-      yaxis: { automargin: true },
+      xaxis: { title: t.umfangDiffM, zeroline: true, zerolinewidth: 2, automargin: true },
+      yaxis: { title: t.teamRole, automargin: true },
       showlegend: true,
-      margin: { t: 28, r: 16, b: 48, l: 120 },
+      legend: LEGEND_BELOW,
+      margin: { t: 12, r: 16, b: 72, l: 120 },
     }),
   };
 }
 
-function memoryVoteScatterFigure(session: PublicSession): PlotFigure | null {
+function memoryVoteScatterFigure(session: PublicSession, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   const round = session.memoryRound;
   const answers = session.memory.filter((item) => item.round === round);
   if (!answers.length) return null;
@@ -633,7 +687,7 @@ function memoryVoteScatterFigure(session: PublicSession): PlotFigure | null {
       },
       customdata: answers.map((item) => {
         const team = session.teams.find((row) => row.id === item.teamId)?.name ?? item.teamId;
-        return [team, item.choice, item.choice === correct ? 'richtig' : 'falsch'];
+        return [team, item.choice, item.choice === correct ? t.hoverRight : t.hoverWrong];
       }),
       hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} · %{customdata[2]}<extra></extra>',
       showlegend: false,
@@ -646,7 +700,7 @@ function memoryVoteScatterFigure(session: PublicSession): PlotFigure | null {
       y: [1.55],
       mode: 'markers+text',
       marker: { symbol: 'star', size: 18, color: '#d4af37', line: { color: '#022366', width: 1 } },
-      text: ['richtig'],
+      text: [t.hoverRight],
       textposition: 'top center',
       hoverinfo: 'skip',
       showlegend: false,
@@ -655,15 +709,28 @@ function memoryVoteScatterFigure(session: PublicSession): PlotFigure | null {
   return {
     data: traces,
     layout: baseLayout({
-      xaxis: { title: 'Antwort', tickvals: [1, 2, 3, 4], ticktext: ['A', 'B', 'C', 'D'], range: [0.4, 4.6] },
-      yaxis: { visible: false, range: [0.35, 1.75], fixedrange: true },
+      xaxis: {
+        title: t.answer,
+        tickvals: [1, 2, 3, 4],
+        ticktext: ['A', 'B', 'C', 'D'],
+        range: [0.4, 4.6],
+        automargin: true,
+      },
+      yaxis: {
+        title: t.teams,
+        range: [0.35, 1.75],
+        tickvals: [1],
+        ticktext: [t.team],
+        automargin: true,
+        fixedrange: true,
+      },
       showlegend: false,
-      margin: { t: 8, r: 12, b: 40, l: 16 },
+      margin: { t: 8, r: 12, b: 48, l: 56 },
     }),
   };
 }
 
-function memoryScoreScatterFigure(session: PublicSession): PlotFigure | null {
+function memoryScoreScatterFigure(session: PublicSession, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   const scores = memoryScores(session);
   if (!scores.length) return null;
   const max = session.memoryRounds.length;
@@ -676,19 +743,26 @@ function memoryScoreScatterFigure(session: PublicSession): PlotFigure | null {
         mode: 'markers',
         marker: { size: 14, color: '#0b41cd' },
         customdata: scores.map((item) => [item.teamName, item.correct]),
-        hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} richtig<extra></extra>',
+        hovertemplate: `<b>%{customdata[0]}</b><br>%{customdata[1]} ${t.hoverCorrect}<extra></extra>`,
       },
     ],
     layout: baseLayout({
-      xaxis: { title: 'Richtige Moleküle', dtick: 1, range: [-0.5, max + 0.5] },
-      yaxis: { visible: false, range: [0.35, 1.65], fixedrange: true },
+      xaxis: { title: t.correctMolecules, dtick: 1, range: [-0.5, max + 0.5], automargin: true },
+      yaxis: {
+        title: t.teams,
+        range: [0.35, 1.65],
+        tickvals: [1],
+        ticktext: [t.team],
+        automargin: true,
+        fixedrange: true,
+      },
       showlegend: false,
-      margin: { t: 8, r: 12, b: 40, l: 16 },
+      margin: { t: 8, r: 12, b: 48, l: 56 },
     }),
   };
 }
 
-function memoryVoteFigure(session: PublicSession): PlotFigure | null {
+function memoryVoteFigure(session: PublicSession, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   const buckets = memoryVoteBuckets(session, session.memoryRound);
   if (!buckets.some((bucket) => bucket.count)) return null;
   const correct = buckets.find((bucket) => bucket.correct);
@@ -705,10 +779,10 @@ function memoryVoteFigure(session: PublicSession): PlotFigure | null {
         },
       },
       customdata: buckets.map((bucket) => [
-        bucket.teams.join(', ') || 'keine Stimmen',
-        bucket.correct ? 'richtig' : '',
+        bucket.teams.join(', ') || '—',
+        bucket.correct ? t.hoverCorrect : '',
       ]),
-      hovertemplate: '<b>%{x}</b><br>%{y} Teams<br>%{customdata[0]}<extra></extra>',
+      hovertemplate: `<b>%{x}</b><br>%{y} ${t.teams}<br>%{customdata[0]}<extra></extra>`,
       text: buckets.map((bucket) => `${bucket.count}`),
       textposition: 'outside',
       showlegend: false,
@@ -729,19 +803,20 @@ function memoryVoteFigure(session: PublicSession): PlotFigure | null {
     data: traces,
     layout: baseLayout({
       yaxis: {
-        title: 'Antworten (Anzahl Teams)',
+        title: t.answersTeamCount,
         rangemode: 'tozero',
         dtick: 1,
         range: [0, Math.max(3, ...buckets.map((bucket) => bucket.count)) + 1.2],
+        automargin: true,
       },
-      xaxis: { title: 'Antwort' },
+      xaxis: { title: t.answer, automargin: true },
       showlegend: false,
-      margin: { t: 16, r: 12, b: 40, l: 56 },
+      margin: { t: 16, r: 12, b: 48, l: 56 },
     }),
   };
 }
 
-function memoryScoreFigure(session: PublicSession): PlotFigure | null {
+function memoryScoreFigure(session: PublicSession, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   if (!session.memory.length) return null;
   const buckets = memoryScoreBuckets(session);
   return {
@@ -752,16 +827,16 @@ function memoryScoreFigure(session: PublicSession): PlotFigure | null {
         y: buckets.map((bucket) => bucket.count),
         marker: { color: '#ff7d29', line: { color: EDGE, width: 2 } },
         customdata: buckets.map((bucket) => [bucket.teams.join(', ') || '—']),
-        hovertemplate: '%{y} Teams mit %{x} richtig<br>%{customdata[0]}<extra></extra>',
+        hovertemplate: `%{y} ${t.hoverTeamsWith} %{x} ${t.hoverCorrect}<br>%{customdata[0]}<extra></extra>`,
         text: buckets.map((bucket) => String(bucket.count)),
         textposition: 'outside',
       },
     ],
     layout: baseLayout({
-      xaxis: { title: 'Richtige Moleküle', dtick: 1 },
-      yaxis: { title: 'Anzahl Teams', rangemode: 'tozero', dtick: 1 },
+      xaxis: { title: t.correctMolecules, dtick: 1, automargin: true },
+      yaxis: { title: t.teamCount, rangemode: 'tozero', dtick: 1, automargin: true },
       showlegend: false,
-      margin: { t: 8, r: 12, b: 44, l: 44 },
+      margin: { t: 8, r: 12, b: 48, l: 56 },
     }),
   };
 }
@@ -832,20 +907,21 @@ function studyPanel(
   return traces;
 }
 
-function chocolateLabels(session: PublicSession): { left: string; right: string; leftKey: 'placebo' | 'drug'; rightKey: 'placebo' | 'drug' } {
-  const drug = session.studyDrugColor === 'red' ? 'Rot' : 'Schwarz';
-  const placebo = session.studyDrugColor === 'red' ? 'Schwarz' : 'Rot';
-  // Left = Rot, Right = Schwarz for consistent spatial mapping
+function chocolateLabels(session: PublicSession, t: ChartCopy): { left: string; right: string; leftKey: 'placebo' | 'drug'; rightKey: 'placebo' | 'drug' } {
+  const drug = session.studyDrugColor === 'red' ? t.red : t.black;
+  const placebo = session.studyDrugColor === 'red' ? t.black : t.red;
+  // Left = Red/Rot, Right = Black/Schwarz for consistent spatial mapping
   if (session.studyDrugColor === 'red') {
-    return { left: `${drug} · Medikament`, right: `${placebo} · Placebo`, leftKey: 'drug', rightKey: 'placebo' };
+    return { left: `${drug} · ${t.drug}`, right: `${placebo} · ${t.placebo}`, leftKey: 'drug', rightKey: 'placebo' };
   }
-  return { left: `${placebo} · Placebo`, right: `${drug} · Medikament`, leftKey: 'placebo', rightKey: 'drug' };
+  return { left: `${placebo} · ${t.placebo}`, right: `${drug} · ${t.drug}`, leftKey: 'placebo', rightKey: 'drug' };
 }
 
-function studyFigure(session: PublicSession): PlotFigure | null {
+function studyFigure(session: PublicSession, lang: Lang = 'de'): PlotFigure | null {
+  const t = chartCopy(lang);
   const rows = studyPeople(session);
   if (!rows.length) return null;
-  const labels = chocolateLabels(session);
+  const labels = chocolateLabels(session, t);
   const left = rows.filter((row) => row.treatment === labels.leftKey);
   const right = rows.filter((row) => row.treatment === labels.rightKey);
   return {
@@ -861,19 +937,30 @@ function studyFigure(session: PublicSession): PlotFigure | null {
     ],
     layout: baseLayout({
       grid: { rows: 1, columns: 2, pattern: 'independent' },
-      yaxis: { title: 'Schmerz', range: [-0.4, 10.4], dtick: 1 },
-      yaxis2: { matches: 'y', range: [-0.4, 10.4], dtick: 1 },
-      xaxis: { title: labels.left, tickvals: [1, 2], ticktext: ['Vor', 'Nach'] },
-      xaxis2: { title: labels.right, tickvals: [1, 2], ticktext: ['Vor', 'Nach'] },
+      yaxis: { title: t.pain, range: [-0.4, 10.4], dtick: 1, automargin: true },
+      yaxis2: { title: t.pain, matches: 'y', range: [-0.4, 10.4], dtick: 1, automargin: true },
+      xaxis: {
+        title: labels.left,
+        tickvals: [1, 2],
+        ticktext: [t.before, t.after],
+        automargin: true,
+      },
+      xaxis2: {
+        title: labels.right,
+        tickvals: [1, 2],
+        ticktext: [t.before, t.after],
+        automargin: true,
+      },
       showlegend: false,
     }),
   };
 }
 
-function studyDeltaFigure(session: PublicSession): PlotFigure | null {
+function studyDeltaFigure(session: PublicSession, lang: Lang = 'de'): PlotFigure | null {
+  const t = chartCopy(lang);
   const rows = studyPeople(session);
   if (!rows.length) return null;
-  const labels = chocolateLabels(session);
+  const labels = chocolateLabels(session, t);
   const groups = [
     {
       key: labels.leftKey,
@@ -930,11 +1017,18 @@ function studyDeltaFigure(session: PublicSession): PlotFigure | null {
   return {
     data: traces,
     layout: baseLayout({
-      yaxis: { title: 'Differenz (Nach − Vor)', zeroline: true, zerolinewidth: 2 },
+      yaxis: {
+        title: t.diffAfterBefore,
+        zeroline: true,
+        zerolinewidth: 2,
+        automargin: true,
+      },
       xaxis: {
+        title: t.chocolate,
         tickvals: [1, 2],
         ticktext: groups.map((group) => group.label),
         range: [0.4, 2.6],
+        automargin: true,
       },
       shapes: [
         {
@@ -952,7 +1046,7 @@ function studyDeltaFigure(session: PublicSession): PlotFigure | null {
   };
 }
 
-function feedbackFigure(session: PublicSession): PlotFigure | null {
+function feedbackFigure(session: PublicSession, t: ChartCopy = chartCopy('de')): PlotFigure | null {
   if (!session.feedback.length) return null;
   const scale = [1, 2, 3, 4, 5, 6];
   const counts = scale.map(
@@ -967,12 +1061,12 @@ function feedbackFigure(session: PublicSession): PlotFigure | null {
         marker: { color: '#ff7d29', line: { color: EDGE, width: 2 } },
         text: counts.map(String),
         textposition: 'outside',
-        hovertemplate: '%{x}: %{y} Teams<extra></extra>',
+        hovertemplate: `%{x}: %{y} ${t.teams}<extra></extra>`,
       },
     ],
     layout: baseLayout({
-      xaxis: { title: 'Bewertung (1–6)', dtick: 1 },
-      yaxis: { title: 'Teams', rangemode: 'tozero', dtick: 1 },
+      xaxis: { title: t.rating, dtick: 1, automargin: true },
+      yaxis: { title: t.teamCount, rangemode: 'tozero', dtick: 1, automargin: true },
       showlegend: false,
       margin: { t: 24, r: 16, b: 56, l: 56 },
     }),
@@ -984,7 +1078,8 @@ function push(charts: ChartSpec[], spec: Omit<ChartSpec, 'figure'> & { figure: P
   charts.push(spec as ChartSpec);
 }
 
-export function heightCharts(session: PublicSession): ChartSpec[] {
+export function heightCharts(session: PublicSession, lang: Lang = 'de'): ChartSpec[] {
+  const t = chartCopy(lang);
   const items = heightValues(session);
   const child = roleItems(items, 'child');
   const parent = roleItems(items, 'parent');
@@ -992,110 +1087,122 @@ export function heightCharts(session: PublicSession): ChartSpec[] {
   const charts: ChartSpec[] = [];
   push(charts, {
     id: 'height-hist',
-    label: 'Histogram',
-    group: 'Körpergrösse',
-    figure: splitHistogram(
-      child,
-      parent,
-      2,
-      'Körpergrösse Kind [cm]',
-      'Körpergrösse Eltern [cm]',
-      'Frequenz',
-    ),
+    label: t.histogram,
+    group: t.heightGroup,
+    figure: splitHistogram(child, parent, 2, t.heightChildCm, t.heightParentCm, t.frequency, t),
   });
   push(charts, {
     id: 'height-box',
-    label: 'Boxplot',
-    group: 'Körpergrösse',
-    figure: splitBox(child, parent, 'Körpergrösse [cm]', 'cm'),
+    label: t.boxplot,
+    group: t.heightGroup,
+    figure: splitBox(child, parent, t.heightCm, 'cm', [], t),
   });
   push(charts, {
     id: 'height-scatter',
-    label: 'Scatterplot',
-    group: 'Körpergrösse',
-    figure: scatterPairs(pairByTeam(items), 'Eltern [cm]', 'Kind [cm]', 'cm', { range }),
+    label: t.scatter,
+    group: t.heightGroup,
+    figure: scatterPairs(
+      pairByTeam(items),
+      t.heightParentCm,
+      t.heightChildCm,
+      'cm',
+      {
+        range,
+        equalAxes: true,
+        diagonal: true,
+        diagonalLabel: t.sameSize,
+        pointName: t.team,
+        parentMedian: median(parent.map((item) => item.value)),
+        childMedian: median(child.map((item) => item.value)),
+      },
+      t,
+    ),
   });
   return charts;
 }
 
-export function umfangCharts(session: PublicSession): ChartSpec[] {
+export function umfangCharts(session: PublicSession, lang: Lang = 'de'): ChartSpec[] {
+  const t = chartCopy(lang);
   const items = umfangValues(session);
   const charts: ChartSpec[] = [];
   push(charts, {
     id: 'umfang-hist',
-    label: 'Histogram',
-    group: 'Zimmerumfang',
-    figure: stackedUmfang(items, session.umfangTruth),
+    label: t.histogram,
+    group: t.umfangGroup,
+    figure: stackedUmfang(items, session.umfangTruth, t),
   });
   push(charts, {
     id: 'umfang-delta',
-    label: 'Balkendiagramm',
-    group: 'Zimmerumfang',
-    figure: umfangDeltaFigure(pairByTeam(items), session.umfangTruth),
+    label: t.barChart,
+    group: t.umfangGroup,
+    figure: umfangDeltaFigure(pairByTeam(items), session.umfangTruth, t),
   });
   return charts;
 }
 
-export function memoryCharts(session: PublicSession): ChartSpec[] {
+export function memoryCharts(session: PublicSession, lang: Lang = 'de'): ChartSpec[] {
+  const t = chartCopy(lang);
   const charts: ChartSpec[] = [];
   const recap = session.game === 'done';
   push(charts, {
     id: recap ? 'memory-score-scatter' : 'memory-vote-scatter',
-    label: 'Scatterplot',
-    group: 'Molekül Memory',
-    figure: recap ? memoryScoreScatterFigure(session) : memoryVoteScatterFigure(session),
+    label: t.scatter,
+    group: t.memoryGroup,
+    figure: recap ? memoryScoreScatterFigure(session, t) : memoryVoteScatterFigure(session, t),
   });
   push(charts, {
     id: recap ? 'memory-scores' : 'memory-votes',
-    label: 'Balkendiagramm',
-    group: 'Molekül Memory',
-    figure: recap ? memoryScoreFigure(session) : memoryVoteFigure(session),
+    label: t.barChart,
+    group: t.memoryGroup,
+    figure: recap ? memoryScoreFigure(session, t) : memoryVoteFigure(session, t),
   });
   return charts;
 }
 
-export function studyCharts(session: PublicSession): ChartSpec[] {
+export function studyCharts(session: PublicSession, lang: Lang = 'de'): ChartSpec[] {
+  const t = chartCopy(lang);
   const charts: ChartSpec[] = [];
   push(charts, {
     id: 'study-slope',
-    label: 'Paired Slope Chart',
-    group: 'Klinische Studie',
-    figure: studyFigure(session),
+    label: t.pairedSlope,
+    group: t.studyGroup,
+    figure: studyFigure(session, lang),
   });
   push(charts, {
     id: 'study-delta',
-    label: 'Differenzen-Plot',
-    group: 'Klinische Studie',
-    figure: studyDeltaFigure(session),
+    label: t.diffPlot,
+    group: t.studyGroup,
+    figure: studyDeltaFigure(session, lang),
   });
   return charts;
 }
 
-export function feedbackCharts(session: PublicSession): ChartSpec[] {
+export function feedbackCharts(session: PublicSession, lang: Lang = 'de'): ChartSpec[] {
+  const t = chartCopy(lang);
   const charts: ChartSpec[] = [];
   push(charts, {
     id: 'feedback-stars',
-    label: 'Sterne',
-    group: 'Feedback',
-    figure: feedbackFigure(session),
+    label: t.stars,
+    group: t.feedbackGroup,
+    figure: feedbackFigure(session, t),
   });
   return charts;
 }
 
-export function chartsForGame(session: PublicSession | HostSession): ChartSpec[] {
+export function chartsForGame(session: PublicSession | HostSession, lang: Lang = 'de'): ChartSpec[] {
   switch (session.game) {
     case 'heights':
-      return heightCharts(session);
+      return heightCharts(session, lang);
     case 'circumference':
-      return umfangCharts(session);
+      return umfangCharts(session, lang);
     case 'memory':
-      return memoryCharts(session);
+      return memoryCharts(session, lang);
     case 'study':
-      return studyCharts(session);
+      return studyCharts(session, lang);
     case 'feedback':
-      return feedbackCharts(session);
+      return feedbackCharts(session, lang);
     case 'done':
-      return recapChartGroups(session).flatMap((group) => group.charts);
+      return recapChartGroups(session, lang).flatMap((group) => group.charts);
     default:
       return [];
   }
@@ -1103,13 +1210,14 @@ export function chartsForGame(session: PublicSession | HostSession): ChartSpec[]
 
 export function recapChartGroups(
   session: PublicSession,
+  lang: Lang = 'de',
 ): { title: string; charts: ChartSpec[] }[] {
+  const t = chartCopy(lang);
   return [
-    { title: 'Körpergrösse', charts: heightCharts(session) },
-    { title: 'Zimmerumfang', charts: umfangCharts(session) },
-    { title: 'Molekül Memory', charts: memoryCharts(session) },
-    { title: 'Klinische Studie', charts: studyCharts(session) },
-    { title: 'Feedback', charts: feedbackCharts(session) },
-  ].filter((group) => group.charts.length);
+    { title: t.heightGroup, charts: heightCharts(session, lang) },
+    { title: t.umfangGroup, charts: umfangCharts(session, lang) },
+    { title: t.memoryGroup, charts: memoryCharts(session, lang) },
+    { title: t.studyGroup, charts: studyCharts(session, lang) },
+    { title: t.feedbackGroup, charts: feedbackCharts(session, lang) },
+  ];
 }
-

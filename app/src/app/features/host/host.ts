@@ -13,9 +13,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { interval } from 'rxjs';
+import { I18n } from '../../core/i18n/i18n';
 import { moleculeImage, moleculeTransform } from '../../core/models/content';
 import { chartsForGame, recapChartGroups } from '../../core/models/charts';
-import { GAME_TITLES, HostSession, Person } from '../../core/models/session';
+import { HostSession, Person } from '../../core/models/session';
 import { buildRecap, recapCsv } from '../../core/models/stats';
 import { SessionApi } from '../../core/services/session-api';
 import { RocheHeader } from '../../shared/components/roche-header';
@@ -34,12 +35,12 @@ export class HostPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  protected readonly i18n = inject(I18n);
   readonly code = input('');
 
   protected readonly session = signal<HostSession | null>(null);
   protected readonly error = signal('');
   protected readonly origin = signal('');
-  protected readonly titles = GAME_TITLES;
   protected readonly moleculeImage = moleculeImage;
   protected readonly moleculeTransform = moleculeTransform;
   private showTimer: ReturnType<typeof setTimeout> | undefined;
@@ -67,11 +68,13 @@ export class HostPage {
   );
   protected readonly charts = computed(() => {
     const session = this.session();
-    return session ? chartsForGame(session) : [];
+    const lang = this.i18n.lang() ?? 'de';
+    return session ? chartsForGame(session, lang) : [];
   });
   protected readonly recapGroups = computed(() => {
     const session = this.session();
-    return session?.game === 'done' ? recapChartGroups(session) : [];
+    const lang = this.i18n.lang() ?? 'de';
+    return session?.game === 'done' ? recapChartGroups(session, lang) : [];
   });
   protected readonly currentRound = computed(() => {
     const session = this.session();
@@ -80,7 +83,8 @@ export class HostPage {
   protected readonly submitted = computed(() => this.submittedCount());
   protected readonly recap = computed(() => {
     const session = this.session();
-    return session ? buildRecap(session) : null;
+    const lang = this.i18n.lang() ?? 'de';
+    return session ? buildRecap(session, lang) : null;
   });
 
   protected namesOf(teamPeople: Person[]): string {
@@ -110,30 +114,33 @@ export class HostPage {
   private async patch(action: 'next' | 'back'): Promise<void> {
     const hostKey = this.hostKey();
     if (!hostKey) {
-      this.error.set('Kein Moderator-Schlüssel in diesem Browser.');
+      this.error.set(this.i18n.m().hostNoKey);
       return;
     }
     try {
-      this.session.set(await this.api.updateHost(this.sessionCode(), hostKey, action));
+      const session = await this.api.updateHost(this.sessionCode(), hostKey, action);
+      this.i18n.useGameLang(session.lang);
+      this.session.set(session);
       this.error.set('');
     } catch {
-      this.error.set('Aktion fehlgeschlagen');
+      this.error.set(this.i18n.m().hostActionFailed);
     }
   }
 
   private async refresh(): Promise<void> {
     const hostKey = this.hostKey();
     if (!hostKey) {
-      this.error.set('Kein Moderator-Schlüssel. Bitte das Spiel hier starten.');
+      this.error.set(this.i18n.m().hostNoKeyStart);
       return;
     }
     try {
       const session = await this.api.getHost(this.sessionCode(), hostKey);
+      this.i18n.useGameLang(session.lang);
       this.session.set(session);
       this.scheduleMemoryShow(session);
       this.error.set('');
     } catch {
-      this.error.set('Spiel nicht gefunden');
+      this.error.set(this.i18n.m().hostGameMissing);
     }
   }
 
@@ -170,8 +177,9 @@ export class HostPage {
   protected exportCsv(): void {
     const session = this.session();
     if (!session) return;
+    const lang = this.i18n.lang() ?? 'de';
     this.download(
-      recapCsv(session),
+      recapCsv(session, lang),
       `zukunftstag-${session.code}-auswertung.csv`,
       'text/csv;charset=utf-8',
     );

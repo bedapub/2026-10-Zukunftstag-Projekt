@@ -24,18 +24,24 @@
 
 .settings .pick {
   min-height: 40px;
-  border: 2px solid transparent;
-  color: var(--white);
+  border: 2px solid var(--grey-3);
+  background: var(--white);
+  color: var(--roche-dark-blue);
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .settings .pick.red {
   background: #c8102e;
+  color: var(--white);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .settings .pick.black {
   background: #1a1a1a;
+  color: var(--white);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .settings .pick.selected {

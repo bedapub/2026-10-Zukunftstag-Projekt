@@ -5,6 +5,7 @@ import {
   FeedbackAnswer,
   GAME_ORDER,
   GameId,
+  GameLang,
   GameStage,
   GameSummary,
   HeightsAnswer,
@@ -29,6 +30,7 @@ export interface SessionRecord {
   umfangTruth: number;
   studyUnblinded: boolean;
   studyDrugColor: ChocolateColor;
+  lang: GameLang;
   memoryRounds: MemoryRoundPublic[];
   teams: Team[];
   heights: HeightsAnswer[];
@@ -101,7 +103,7 @@ function publicMemoryRounds(session: SessionRecord): MemoryRoundPublic[] {
     correctLabel: round.index <= reveal ? round.correctLabel : undefined,
     options: round.options.map((option) => ({
       ...option,
-      name: round.index <= reveal ? option.name : `Molekül ${option.label}`,
+      name: round.index <= reveal ? option.name : `Molecule ${option.label}`,
     })),
   }));
 }
@@ -115,6 +117,7 @@ export function toPublic(session: SessionRecord): PublicSession {
     umfangTruth: session.umfangTruth,
     studyUnblinded: session.studyUnblinded,
     studyDrugColor: session.studyUnblinded ? session.studyDrugColor : undefined,
+    lang: session.lang === 'en' ? 'en' : 'de',
     memoryRounds: publicMemoryRounds(session),
     teams: session.teams,
     heights: session.heights,
@@ -156,7 +159,7 @@ export async function deleteSession(code: string, password: string): Promise<voi
 
 export async function createSession(
   password: string,
-  settings?: { umfangTruth?: number; studyDrugColor?: ChocolateColor },
+  settings?: { umfangTruth?: number; studyDrugColor?: ChocolateColor; lang?: GameLang },
 ): Promise<HostSession> {
   requirePassword(password);
   const umfangTruth =
@@ -167,6 +170,7 @@ export async function createSession(
     settings?.studyDrugColor === 'red' || settings?.studyDrugColor === 'black'
       ? settings.studyDrugColor
       : 'black';
+  const lang: GameLang = settings?.lang === 'en' ? 'en' : 'de';
   return serialize('__create__', async () => {
     const session: SessionRecord = {
       code: await makeCode(),
@@ -178,6 +182,7 @@ export async function createSession(
       umfangTruth,
       studyUnblinded: false,
       studyDrugColor,
+      lang,
       memoryRounds: buildMemoryRounds(),
       teams: [],
       heights: [],

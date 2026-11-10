@@ -1,24 +1,32 @@
-<app-roche-header [subtitle]="session()?.game === 'done' ? 'Ende' : team()?.name || 'Team'" />
+<app-roche-header
+  [subtitle]="
+    session()?.game === 'done' ? i18n.m().playEnd : team()?.name || i18n.m().playTeam
+  "
+/>
 <main class="play">
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
   @if (!team()) {
     <section class="waiting">
-      <h2>Team nicht gefunden</h2>
+      <h2>{{ i18n.m().playTeamMissing }}</h2>
     </section>
   } @else if (session(); as s) {
     @if (s.game === 'lobby') {
       <section class="waiting">
         <h1>{{ team()?.name }}</h1>
-        <p>Warten auf Start…</p>
+        <p>{{ i18n.m().playWaiting }}</p>
       </section>
     } @else if (s.game === 'heights' && s.stage === 'play') {
       <section class="sheet">
-        <h1>Körpergrösse (cm)</h1>
+        <h1>{{ i18n.m().playHeightsTitle }}</h1>
         @for (person of team()?.people ?? []; track person.id) {
           <label class="field">
-            <span>{{ person.name }} ({{ person.role === 'parent' ? 'Eltern' : 'Kind' }})</span>
+            <span>
+              {{ person.name }} ({{
+                person.role === 'parent' ? i18n.m().playRoleParent : i18n.m().playRoleChild
+              }})
+            </span>
             <input
               type="number"
               min="50"
@@ -28,11 +36,11 @@
             />
           </label>
         }
-        <button class="btn" (click)="sendHeights()">Senden</button>
+        <button class="btn" (click)="sendHeights()">{{ i18n.m().playSend }}</button>
       </section>
     } @else if (s.game === 'circumference' && s.stage === 'play') {
       <section class="sheet">
-        <h1>Zimmerumfang (m)</h1>
+        <h1>{{ i18n.m().playUmfangTitle }}</h1>
         @for (person of team()?.people ?? []; track person.id) {
           <label class="field">
             <span>{{ person.name }}</span>
@@ -45,15 +53,15 @@
             />
           </label>
         }
-        <button class="btn" (click)="sendUmfang()">Senden</button>
+        <button class="btn" (click)="sendUmfang()">{{ i18n.m().playSend }}</button>
       </section>
     } @else if (s.game === 'memory' && s.stage === 'show') {
       <section class="waiting">
-        <h1>Schaut nach vorne</h1>
+        <h1>{{ i18n.m().playLookFront }}</h1>
       </section>
     } @else if (s.game === 'memory' && s.stage === 'play' && round(); as round) {
       <section class="sheet">
-        <h1>Welche Struktur war es?</h1>
+        <h1>{{ i18n.m().playMemoryQuestion }}</h1>
         <div class="mol-grid">
           @for (option of round.options; track option.label) {
             <button
@@ -74,16 +82,16 @@
           }
         </div>
         @if (myMemory()) {
-          <p>Eure Antwort: {{ myMemory()?.choice }}</p>
+          <p>{{ i18n.m().playYourAnswer }}: {{ myMemory()?.choice }}</p>
         }
       </section>
     } @else if (s.game === 'study' && s.stage === 'play') {
       <section class="sheet">
-        <h1>Klinische Studie</h1>
+        <h1>{{ i18n.m().playStudyTitle }}</h1>
         @for (person of team()?.people ?? []; track person.id) {
           <article class="person-card">
             <h2>{{ person.name }}</h2>
-            <p class="field"><span>Schokolade</span></p>
+            <p class="field"><span>{{ i18n.m().playChocolate }}</span></p>
             <div class="choice-grid tiny">
               <button
                 class="choco red"
@@ -91,7 +99,7 @@
                 [class.selected]="study()[person.id]?.color === 'red'"
                 (click)="setStudy(person.id, { color: 'red' })"
               >
-                Rot
+                {{ i18n.m().playRed }}
               </button>
               <button
                 class="choco black"
@@ -99,10 +107,10 @@
                 [class.selected]="study()[person.id]?.color === 'black'"
                 (click)="setStudy(person.id, { color: 'black' })"
               >
-                Schwarz
+                {{ i18n.m().playBlack }}
               </button>
             </div>
-            <p class="field"><span>Schmerz vorher</span></p>
+            <p class="field"><span>{{ i18n.m().playPainBefore }}</span></p>
             <div class="pain">
               @for (n of painScale; track n) {
                 <button
@@ -115,7 +123,7 @@
                 </button>
               }
             </div>
-            <p class="field"><span>Schmerz nachher</span></p>
+            <p class="field"><span>{{ i18n.m().playPainAfter }}</span></p>
             <div class="pain">
               @for (n of painScale; track n) {
                 <button
@@ -130,11 +138,11 @@
             </div>
           </article>
         }
-        <button class="btn" (click)="sendStudy()">Senden</button>
+        <button class="btn" (click)="sendStudy()">{{ i18n.m().playSend }}</button>
       </section>
     } @else if (s.game === 'feedback') {
       <section class="sheet">
-        <h1>Wie hat's gefallen? (1–6)</h1>
+        <h1>{{ i18n.m().playFeedbackTitle }}</h1>
         <div class="stars">
           @for (n of stars; track n) {
             <button
@@ -148,25 +156,25 @@
           }
         </div>
         <label class="field">
-          <span>Kommentar (optional)</span>
+          <span>{{ i18n.m().playComment }}</span>
           <textarea [value]="comment()" (input)="comment.set($any($event.target).value)"></textarea>
         </label>
-        <button class="btn" type="button" (click)="sendFeedback()">Senden</button>
+        <button class="btn" type="button" (click)="sendFeedback()">{{ i18n.m().playSend }}</button>
       </section>
     } @else if (s.game === 'done') {
       <section class="waiting">
-        <h1>Spiel wurde beendet</h1>
-        <p>Danke fürs Mitmachen.</p>
-        <button class="btn" type="button" (click)="goHome()">Zur Startseite</button>
+        <h1>{{ i18n.m().playDoneTitle }}</h1>
+        <p>{{ i18n.m().playDoneThanks }}</p>
+        <button class="btn" type="button" (click)="goHome()">{{ i18n.m().playHome }}</button>
       </section>
     } @else {
       <section class="waiting">
-        <h1>Schaut nach vorne</h1>
+        <h1>{{ i18n.m().playLookFront }}</h1>
       </section>
     }
 
     @if (saved() && s.game !== 'done') {
-      <p class="ok">Gespeichert</p>
+      <p class="ok">{{ i18n.m().playSaved }}</p>
     }
   }
 </main>

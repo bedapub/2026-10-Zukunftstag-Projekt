@@ -1,7 +1,7 @@
-<app-roche-header subtitle="Moderator">
+<app-roche-header [subtitle]="i18n.m().hostModerator">
   @if (unlocked()) {
     <div class="host-actions">
-      <button type="button" class="btn ghost" (click)="logout()">Abmelden</button>
+      <button type="button" class="btn ghost" (click)="logout()">{{ i18n.m().hostLogout }}</button>
     </div>
   }
 </app-roche-header>
@@ -13,9 +13,9 @@
 
   @if (!unlocked()) {
     <form class="card login" (submit)="$event.preventDefault(); login()">
-      <h1>Moderator</h1>
+      <h1>{{ i18n.m().hostModerator }}</h1>
       <label class="field">
-        <span>Passwort</span>
+        <span>{{ i18n.m().hostPassword }}</span>
         <input
           type="password"
           autocomplete="current-password"
@@ -23,14 +23,14 @@
           (input)="password.set($any($event.target).value)"
         />
       </label>
-      <button class="btn" type="submit" [disabled]="busy()">Weiter</button>
+      <button class="btn" type="submit" [disabled]="busy()">{{ i18n.m().hostContinue }}</button>
     </form>
   } @else {
     <article class="card settings">
-      <h1>Neues Spiel</h1>
+      <h1>{{ i18n.m().hostNewGame }}</h1>
       <div class="grid-2">
         <label class="field">
-          <span>Zimmerumfang (m)</span>
+          <span>{{ i18n.m().hostRoomCircumference }}</span>
           <input
             type="number"
             min="1"
@@ -40,7 +40,7 @@
           />
         </label>
         <div class="field">
-          <span>Medikament</span>
+          <span>{{ i18n.m().hostDrug }}</span>
           <div class="picks">
             <button
               type="button"
@@ -48,7 +48,7 @@
               [class.selected]="studyDrugColor() === 'red'"
               (click)="studyDrugColor.set('red')"
             >
-              Rot
+              {{ i18n.m().playRed }}
             </button>
             <button
               type="button"
@@ -56,30 +56,51 @@
               [class.selected]="studyDrugColor() === 'black'"
               (click)="studyDrugColor.set('black')"
             >
-              Schwarz
+              {{ i18n.m().playBlack }}
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <span>{{ i18n.both('changeLanguage') }}</span>
+          <div class="picks">
+            <button
+              type="button"
+              class="pick"
+              [class.selected]="gameLang() === 'de'"
+              (click)="gameLang.set('de')"
+            >
+              Deutsch
+            </button>
+            <button
+              type="button"
+              class="pick"
+              [class.selected]="gameLang() === 'en'"
+              (click)="gameLang.set('en')"
+            >
+              English
             </button>
           </div>
         </div>
       </div>
       <button type="button" class="btn" [disabled]="busy()" (click)="startGame()">
-        Neues Spiel starten
+        {{ i18n.m().hostStartGame }}
       </button>
     </article>
 
     <article class="card">
-      <h1>Vergangene Spiele</h1>
+      <h1>{{ i18n.m().hostPastGames }}</h1>
       @if (!games().length) {
-        <p class="muted">Noch keine Spiele.</p>
+        <p class="muted">{{ i18n.m().hostNoGames }}</p>
       } @else {
         <div class="table-wrap">
           <table class="data">
             <thead>
               <tr>
-                <th>PIN</th>
-                <th>Datum</th>
-                <th>Phase</th>
-                <th>Teams</th>
-                <th>Status</th>
+                <th>{{ i18n.m().hostPin }}</th>
+                <th>{{ i18n.m().hostDate }}</th>
+                <th>{{ i18n.m().hostPhase }}</th>
+                <th>{{ i18n.m().hostTeams }}</th>
+                <th>{{ i18n.m().hostStatus }}</th>
                 <th></th>
               </tr>
             </thead>
@@ -88,12 +109,12 @@
                 <tr>
                   <td>{{ game.code }}</td>
                   <td>{{ when(game.createdAt) }}</td>
-                  <td>{{ titles[game.game] }}</td>
+                  <td>{{ i18n.gameTitle(game.game) }}</td>
                   <td>{{ game.teamCount }}</td>
-                  <td>{{ game.finished ? 'Beendet' : 'Offen' }}</td>
+                  <td>{{ game.finished ? i18n.m().hostFinished : i18n.m().hostOpen }}</td>
                   <td class="actions">
                     <button type="button" class="btn ghost" (click)="openGame(game)">
-                      Öffnen
+                      {{ i18n.m().hostOpenAction }}
                     </button>
                     <button
                       type="button"
@@ -101,7 +122,7 @@
                       [disabled]="busy()"
                       (click)="deleteGame(game)"
                     >
-                      Löschen
+                      {{ i18n.m().hostDelete }}
                     </button>
                   </td>
                 </tr>

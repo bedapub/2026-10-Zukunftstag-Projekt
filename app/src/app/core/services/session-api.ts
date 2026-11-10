@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   ChocolateColor,
   FeedbackAnswer,
+  GameLang,
   GameSummary,
   HeightsAnswer,
   HostSession,
@@ -21,7 +22,7 @@ export class SessionApi {
 
   create(
     password: string,
-    settings: { umfangTruth: number; studyDrugColor: ChocolateColor },
+    settings: { umfangTruth: number; studyDrugColor: ChocolateColor; lang: GameLang },
   ): Promise<HostSession> {
     return firstValueFrom(
       this.http.post<HostSession>('/api/sessions', { password, ...settings }),

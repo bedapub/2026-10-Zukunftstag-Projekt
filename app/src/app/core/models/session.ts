@@ -10,6 +10,7 @@ export type GameId =
 export type GameStage = 'show' | 'play' | 'results';
 export type MemoryChoice = 'A' | 'B' | 'C' | 'D';
 export type ChocolateColor = 'red' | 'black';
+export type GameLang = 'de' | 'en';
 
 export interface Person {
   id: string;
@@ -90,6 +91,7 @@ export interface PublicSession {
   umfangTruth: number;
   studyUnblinded: boolean;
   studyDrugColor?: ChocolateColor;
+  lang: GameLang;
   memoryRounds: MemoryRoundPublic[];
   teams: Team[];
   heights: HeightsAnswer[];

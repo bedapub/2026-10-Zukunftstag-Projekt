@@ -1,3 +1,4 @@
+import { Lang } from '../i18n/messages';
 import {
   ChocolateColor,
   MemoryAnswer,
@@ -341,15 +342,17 @@ export interface Recap {
   feedback: RecapFeedbackRow[];
 }
 
-function roleLabel(role: Person['role']): string {
+function roleLabel(role: Person['role'], lang: Lang): string {
+  if (lang === 'en') return role === 'parent' ? 'Parent' : 'Child';
   return role === 'parent' ? 'Eltern' : 'Kind';
 }
 
-function chocolateLabel(color: ChocolateColor): string {
+function chocolateLabel(color: ChocolateColor, lang: Lang): string {
+  if (lang === 'en') return color === 'red' ? 'Red' : 'Black';
   return color === 'red' ? 'Rot' : 'Schwarz';
 }
 
-export function buildRecap(session: PublicSession): Recap {
+export function buildRecap(session: PublicSession, lang: Lang = 'de'): Recap {
   const people = personMap(session);
   const measures: RecapMeasureRow[] = [];
   for (const team of session.teams) {
@@ -361,7 +364,7 @@ export function buildRecap(session: PublicSession): Recap {
       measures.push({
         teamName: team.name,
         personName: person.name,
-        role: roleLabel(person.role),
+        role: roleLabel(person.role, lang),
         heightCm,
         umfangM,
         umfangDelta: umfangM == null ? null : round1(umfangM - session.umfangTruth),
@@ -404,13 +407,15 @@ export function buildRecap(session: PublicSession): Recap {
       study.push({
         teamName: team.name,
         personName: person.name,
-        chocolate: chocolateLabel(entry.color),
+        chocolate: chocolateLabel(entry.color, lang),
         before: entry.before,
         after: entry.after,
         delta: round1(entry.after - entry.before),
         treatment: session.studyUnblinded
           ? entry.color === session.studyDrugColor
-            ? 'Medikament'
+            ? lang === 'en'
+              ? 'Drug'
+              : 'Medikament'
             : 'Placebo'
           : '–',
       });
@@ -431,8 +436,10 @@ export function buildRecap(session: PublicSession): Recap {
     teamCount: session.teams.length,
     umfangTruth: session.umfangTruth,
     studyDrug: session.studyUnblinded
-      ? chocolateLabel(session.studyDrugColor ?? 'red')
-      : 'noch geheim',
+      ? chocolateLabel(session.studyDrugColor ?? 'red', lang)
+      : lang === 'en'
+        ? 'still secret'
+        : 'noch geheim',
     measures,
     memoryRounds,
     memory,
@@ -447,8 +454,8 @@ function csvCell(value: string | number | null | undefined): string {
   return text;
 }
 
-export function recapCsv(session: PublicSession): string {
-  const recap = buildRecap(session);
+export function recapCsv(session: PublicSession, lang: Lang = 'de'): string {
+  const recap = buildRecap(session, lang);
   const memoryHeaders = recap.memoryRounds.map(
     (round) => `Memory_${round.index + 1}_${round.name}`,
   );
@@ -472,6 +479,8 @@ export function recapCsv(session: PublicSession): string {
     'Feedback_Kommentar',
   ];
   const lines = [header.map(csvCell).join(';')];
+  const right = lang === 'en' ? 'correct' : 'richtig';
+  const wrong = lang === 'en' ? 'wrong' : 'falsch';
   for (const row of recap.measures) {
     const memory = recap.memory.find((item) => item.teamName === row.teamName);
     const study = recap.study.find(
@@ -481,7 +490,7 @@ export function recapCsv(session: PublicSession): string {
     const memoryCells = recap.memoryRounds.map((_, index) => {
       const cell = memory?.cells[index];
       if (!cell || cell.ok == null) return '';
-      return `${cell.choice} (${cell.ok ? 'richtig' : 'falsch'})`;
+      return `${cell.choice} (${cell.ok ? right : wrong})`;
     });
     lines.push(
       [

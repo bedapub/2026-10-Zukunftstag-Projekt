@@ -1,11 +1,11 @@
-<app-roche-header subtitle="Team beitreten" />
+<app-roche-header [subtitle]="i18n.m().joinTitle" />
 <main class="page">
   <form class="card join-form" (submit)="$event.preventDefault(); submit()">
-    <h1>Team beitreten</h1>
+    <h1>{{ i18n.m().joinTitle }}</h1>
 
     @if (!code()) {
       <label class="field">
-        <span>PIN</span>
+        <span>{{ i18n.m().homePin }}</span>
         <input
           inputmode="numeric"
           [value]="pin()"
@@ -17,27 +17,27 @@
     }
 
     <label class="field">
-      <span>Teamname</span>
+      <span>{{ i18n.m().joinTeamName }}</span>
       <input
         list="roche-teams"
-        placeholder="z.B. Herceptin"
+        [placeholder]="i18n.m().joinTeamPlaceholder"
         [value]="teamName()"
         (input)="teamName.set($any($event.target).value)"
       />
       <datalist id="roche-teams">
-        @for (team of teams; track team.name) {
+        @for (team of teams(); track team.name) {
           <option [value]="team.name">{{ team.indication }}</option>
         }
       </datalist>
     </label>
 
     <section>
-      <h2>Eltern</h2>
+      <h2>{{ i18n.m().joinParents }}</h2>
       @for (row of parents(); track row.id) {
         <div class="name-row">
           <input
             [value]="row.value"
-            placeholder="Vorname"
+            [placeholder]="i18n.m().joinFirstName"
             (input)="setName('parent', row.id, $any($event.target).value)"
           />
           <button type="button" class="btn secondary" (click)="remove('parent', row.id)">
@@ -46,17 +46,17 @@
         </div>
       }
       <button type="button" class="btn secondary" (click)="add('parent')">
-        + Elternteil
+        {{ i18n.m().joinAddParent }}
       </button>
     </section>
 
     <section>
-      <h2>Kinder</h2>
+      <h2>{{ i18n.m().joinChildren }}</h2>
       @for (row of children(); track row.id) {
         <div class="name-row">
           <input
             [value]="row.value"
-            placeholder="Vorname"
+            [placeholder]="i18n.m().joinFirstName"
             (input)="setName('child', row.id, $any($event.target).value)"
           />
           <button type="button" class="btn secondary" (click)="remove('child', row.id)">
@@ -64,12 +64,14 @@
           </button>
         </div>
       }
-      <button type="button" class="btn secondary" (click)="add('child')">+ Kind</button>
+      <button type="button" class="btn secondary" (click)="add('child')">
+        {{ i18n.m().joinAddChild }}
+      </button>
     </section>
 
     @if (error()) {
       <p class="error">{{ error() }}</p>
     }
-    <button class="btn" type="submit" [disabled]="busy()">Beitreten</button>
+    <button class="btn" type="submit" [disabled]="busy()">{{ i18n.m().joinSubmit }}</button>
   </form>
 </main>

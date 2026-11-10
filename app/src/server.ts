@@ -70,6 +70,7 @@ async function handleApi(req: Request, res: Response): Promise<void> {
         await createSession(String(req.body?.password ?? ''), {
           umfangTruth: Number(req.body?.umfangTruth),
           studyDrugColor: req.body?.studyDrugColor,
+          lang: req.body?.lang,
         }),
       );
       return;

@@ -1,10 +1,13 @@
-<app-roche-header />
+<app-roche-header [subtitle]="i18n.both('brandSubtitle')" />
 <main class="page home">
   <section class="hero card">
-    <h1>Mathe Macht Medikamente</h1>
+    <h1>
+      <span class="title-de">{{ i18n.de.homeTitle }}</span>
+      <span class="title-en">{{ i18n.en.homeTitle }}</span>
+    </h1>
     <form class="join-box" (submit)="$event.preventDefault(); join()">
       <label class="field">
-        <span>PIN</span>
+        <span>{{ i18n.both('homePin') }}</span>
         <input
           inputmode="numeric"
           maxlength="8"
@@ -13,7 +16,7 @@
           (input)="pin.set($any($event.target).value)"
         />
       </label>
-      <button class="btn" type="submit" [disabled]="busy()">Beitreten</button>
+      <button class="btn" type="submit" [disabled]="busy()">{{ i18n.both('homeJoin') }}</button>
     </form>
     @if (error()) {
       <p class="error">{{ error() }}</p>
@@ -22,5 +25,7 @@
 </main>
 
 <div class="host-corner">
-  <button class="host-link" type="button" (click)="goHost()">Moderator</button>
+  <button class="host-link" type="button" (click)="goHost()">
+    {{ i18n.both('homeHost') }}
+  </button>
 </div>

@@ -18,5 +18,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RocheHeader {
-  readonly subtitle = input('Mathe Macht Medikamente');
+  readonly subtitle = input('WissensZukunft');
 }

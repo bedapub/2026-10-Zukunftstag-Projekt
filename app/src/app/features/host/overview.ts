@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChocolateColor, GAME_TITLES, GameSummary } from '../../core/models/session';
+import { I18n } from '../../core/i18n/i18n';
+import { ChocolateColor, GameLang, GameSummary } from '../../core/models/session';
 import { SessionApi } from '../../core/services/session-api';
 import { RocheHeader } from '../../shared/components/roche-header';
 
@@ -17,7 +18,7 @@ const PASSWORD_KEY = 'zukunftstag-moderator-password';
 export class HostOverviewPage {
   private readonly api = inject(SessionApi);
   private readonly router = inject(Router);
-  protected readonly titles = GAME_TITLES;
+  protected readonly i18n = inject(I18n);
   protected readonly password = signal(readPassword());
   protected readonly unlocked = signal(false);
   protected readonly games = signal<GameSummary[]>([]);
@@ -25,6 +26,7 @@ export class HostOverviewPage {
   protected readonly busy = signal(false);
   protected readonly umfangTruth = signal(28);
   protected readonly studyDrugColor = signal<ChocolateColor>('black');
+  protected readonly gameLang = signal<GameLang>('de');
 
   constructor() {
     if (this.password()) void this.login();
@@ -40,7 +42,7 @@ export class HostOverviewPage {
   protected async startGame(): Promise<void> {
     const umfangTruth = Number(this.umfangTruth());
     if (!umfangTruth || umfangTruth <= 0) {
-      this.error.set('Bitte Zimmerumfang eingeben');
+      this.error.set(this.i18n.m().hostEnterUmfang);
       return;
     }
     this.busy.set(true);
@@ -49,11 +51,13 @@ export class HostOverviewPage {
       const session = await this.api.create(this.password(), {
         umfangTruth,
         studyDrugColor: this.studyDrugColor(),
+        lang: this.gameLang(),
       });
+      this.i18n.useGameLang(session.lang);
       this.rememberHost(session.code, session.hostKey);
       await this.router.navigate(['/host', session.code]);
     } catch (error) {
-      this.error.set(this.message(error, 'Spiel konnte nicht gestartet werden'));
+      this.error.set(this.message(error, this.i18n.m().hostStartFailed));
     } finally {
       this.busy.set(false);
     }
@@ -65,7 +69,7 @@ export class HostOverviewPage {
   }
 
   protected async deleteGame(game: GameSummary): Promise<void> {
-    if (!globalThis.confirm(`Spiel ${game.code} wirklich löschen?`)) return;
+    if (!globalThis.confirm(`PIN ${game.code} — ${this.i18n.m().hostDeleteConfirm}`)) return;
     this.busy.set(true);
     this.error.set('');
     try {
@@ -73,14 +77,15 @@ export class HostOverviewPage {
       removeLocal(`zukunftstag-host-${game.code}`);
       this.games.update((games) => games.filter((item) => item.code !== game.code));
     } catch (error) {
-      this.error.set(this.message(error, 'Spiel konnte nicht gelöscht werden'));
+      this.error.set(this.message(error, this.i18n.m().hostDeleteFailed));
     } finally {
       this.busy.set(false);
     }
   }
 
   protected when(value: number): string {
-    return new Date(value).toLocaleString('de-CH', {
+    const locale = this.i18n.lang() === 'en' ? 'en-GB' : 'de-CH';
+    return new Date(value).toLocaleString(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -92,7 +97,7 @@ export class HostOverviewPage {
   protected async login(): Promise<void> {
     const password = this.password().trim();
     if (!password) {
-      this.error.set('Bitte Passwort eingeben');
+      this.error.set(this.i18n.m().hostEnterPassword);
       return;
     }
     this.busy.set(true);
@@ -105,7 +110,7 @@ export class HostOverviewPage {
     } catch (error) {
       writePassword('');
       this.unlocked.set(false);
-      this.error.set(this.message(error, 'Anmeldung fehlgeschlagen'));
+      this.error.set(this.message(error, this.i18n.m().hostLoginFailed));
     } finally {
       this.busy.set(false);
     }

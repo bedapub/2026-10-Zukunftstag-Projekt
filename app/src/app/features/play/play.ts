@@ -12,6 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { interval } from 'rxjs';
+import { I18n } from '../../core/i18n/i18n';
 import { moleculeImage, moleculeTransform } from '../../core/models/content';
 import {
   ChocolateColor,
@@ -34,8 +35,8 @@ export class PlayPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  protected readonly i18n = inject(I18n);
   readonly code = input('');
-
   protected readonly session = signal<PublicSession | null>(null);
   protected readonly teamId = signal('');
   protected readonly error = signal('');
@@ -169,7 +170,7 @@ export class PlayPage {
           Number.isNaN(entry.after),
       )
     ) {
-      this.error.set('Bitte für jede Person Schokolade und Schmerz vorher/nachher angeben');
+      this.error.set(this.i18n.m().playStudyIncomplete);
       return;
     }
     await this.save(() =>
@@ -191,7 +192,7 @@ export class PlayPage {
 
   protected async sendFeedback(): Promise<void> {
     if (!this.rating()) {
-      this.error.set('Bitte eine Bewertung wählen');
+      this.error.set(this.i18n.m().playFeedbackRequired);
       return;
     }
     await this.save(() =>
@@ -214,8 +215,8 @@ export class PlayPage {
       this.saved.set(false);
       this.error.set(
         error instanceof HttpErrorResponse
-          ? error.error?.message || 'Senden fehlgeschlagen'
-          : 'Senden fehlgeschlagen',
+          ? error.error?.message || this.i18n.m().playSendFailed
+          : this.i18n.m().playSendFailed,
       );
     }
   }
@@ -223,11 +224,13 @@ export class PlayPage {
   private async refresh(init = false): Promise<void> {
     try {
       const session = await this.api.get(this.sessionCode());
+      this.i18n.useGameLang(session.lang);
       const teamId = this.readTeamId();
       const payload = JSON.stringify({
         game: session.game,
         stage: session.stage,
         memoryRound: session.memoryRound,
+        lang: session.lang,
         teams: session.teams,
         heights: session.heights,
         umfang: session.umfang,
@@ -245,7 +248,7 @@ export class PlayPage {
       if (init) this.hydrate(session, teamId);
       this.error.set('');
     } catch {
-      this.error.set('Spiel nicht gefunden');
+      this.error.set(this.i18n.m().playGameNotFound);
     }
   }
 

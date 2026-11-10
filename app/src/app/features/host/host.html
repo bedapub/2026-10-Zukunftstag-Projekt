@@ -1,5 +1,5 @@
 <div class="host-screen">
-<app-roche-header [subtitle]="titles[session()?.game ?? 'lobby']">
+<app-roche-header [subtitle]="i18n.gameTitle(session()?.game ?? 'lobby')">
   <div class="host-actions">
     <button
       type="button"
@@ -7,18 +7,18 @@
       [disabled]="session()?.game === 'lobby'"
       (click)="back()"
     >
-      Zurück
+      {{ i18n.m().hostBack }}
     </button>
     <button type="button" class="btn" (click)="next()">
       {{
         session()?.game === 'feedback'
-          ? 'Spiel beenden'
+          ? i18n.m().hostEndGame
           : session()?.game === 'done'
-            ? 'Zur Übersicht'
-            : 'Weiter'
+            ? i18n.m().hostToOverview
+            : i18n.m().hostNext
       }}
     </button>
-    <div class="host-pin" aria-label="PIN">{{ sessionCode() }}</div>
+    <div class="host-pin" [attr.aria-label]="i18n.m().hostPin">{{ sessionCode() }}</div>
   </div>
 </app-roche-header>
 
@@ -33,18 +33,18 @@
         <div class="center lobby-join">
           <div class="box">
             <div class="pin">{{ s.code }}</div>
-            <img class="qr" [src]="qrSrc()" alt="QR Code zum Beitreten" />
+            <img class="qr" [src]="qrSrc()" [alt]="i18n.m().hostQrAlt" />
             <label class="field">
-              <span>Adresse</span>
+              <span>{{ i18n.m().hostAddress }}</span>
               <input [value]="origin()" (input)="origin.set($any($event.target).value)" />
             </label>
           </div>
         </div>
         <div class="lobby-teams">
-          <h2>Teams ({{ s.teams.length }})</h2>
+          <h2>{{ i18n.m().hostTeams }} ({{ s.teams.length }})</h2>
           <div class="box">
             @if (!s.teams.length) {
-              <p class="muted">Noch keine Teams</p>
+              <p class="muted">{{ i18n.m().hostNoTeamsYet }}</p>
             }
             <ul class="team-list">
               @for (team of s.teams; track team.id) {
@@ -61,7 +61,7 @@
 
     @if (s.game === 'heights' && s.stage === 'play') {
       <section class="stage center">
-        <h1>Körpergrösse eintragen</h1>
+        <h1>{{ i18n.m().hostHeightsEnter }}</h1>
         <div class="box">
           <p class="count">{{ submitted() }}</p>
         </div>
@@ -75,7 +75,7 @@
 
     @if (s.game === 'circumference' && s.stage === 'play') {
       <section class="stage center">
-        <h1>Zimmerumfang schätzen</h1>
+        <h1>{{ i18n.m().hostUmfangGuess }}</h1>
         <div class="box">
           <p class="count">{{ submitted() }}</p>
         </div>
@@ -98,7 +98,7 @@
       }
       @if (s.stage === 'play') {
         <section class="stage center">
-          <h1>Welche Struktur war es?</h1>
+          <h1>{{ i18n.m().hostMemoryQuestion }}</h1>
           <div class="mol-grid">
             @for (option of round.options; track option.label) {
               <figure class="box">
@@ -117,7 +117,10 @@
       }
       @if (s.stage === 'results') {
         <section class="charts">
-          <h2>Runde {{ s.memoryRound + 1 }} · Richtig: {{ round.correctLabel }} — {{ round.name }}</h2>
+          <h2>
+            {{ i18n.m().hostRound }} {{ s.memoryRound + 1 }} · {{ i18n.m().hostCorrect }}:
+            {{ round.correctLabel }} — {{ round.name }}
+          </h2>
           <ng-container [ngTemplateOutlet]="chartGallery" />
         </section>
       }
@@ -125,7 +128,7 @@
 
     @if (s.game === 'study' && s.stage === 'play') {
       <section class="stage center">
-        <h1>Klinische Studie</h1>
+        <h1>{{ i18n.m().hostStudyTitle }}</h1>
         <div class="box">
           <p class="count">{{ submitted() }}</p>
         </div>
@@ -133,15 +136,21 @@
     }
     @if (s.game === 'study' && s.stage === 'results') {
       <section class="charts">
-        <h1>{{ s.studyDrugColor === 'red' ? 'Rot' : 'Schwarz' }} war das Medikament</h1>
+        <h1>
+          {{ s.studyDrugColor === 'red' ? i18n.m().playRed : i18n.m().playBlack }}
+          {{ i18n.m().hostDrugWas }}
+        </h1>
         <ng-container [ngTemplateOutlet]="chartGallery" />
       </section>
     }
 
     @if (s.game === 'feedback') {
       <section class="charts">
-        <h1>Feedback</h1>
-        <p>{{ s.feedback.length }} von {{ s.teams.length }} Teams haben bewertet.</p>
+        <h1>{{ i18n.m().hostFeedback }}</h1>
+        <p>
+          {{ s.feedback.length }} {{ i18n.m().hostFeedbackCount }} {{ s.teams.length }}
+          {{ i18n.m().hostTeams }}
+        </p>
         <ng-container [ngTemplateOutlet]="chartGallery" />
       </section>
     }
@@ -149,10 +158,10 @@
     @if (s.game === 'done' && recap(); as recap) {
       <section class="recap">
         <header class="center">
-          <h1>Auswertung</h1>
+          <h1>{{ i18n.m().hostRecap }}</h1>
           <p>
-            PIN {{ recap.code }} · {{ recap.teamCount }} Teams · Zimmerumfang
-            {{ recap.umfangTruth }} m · Medikament: {{ recap.studyDrug }}
+            PIN {{ recap.code }} · {{ recap.teamCount }} {{ i18n.m().hostRecapMeta }}
+            {{ recap.umfangTruth }} m · {{ i18n.m().hostDrug }}: {{ recap.studyDrug }}
           </p>
           <p>
             <button type="button" class="text-link" (click)="exportCsv()">CSV</button>
@@ -173,6 +182,9 @@
               @for (chart of group.charts; track chart.id) {
                 <div class="box fill chart-card recap-chart">
                   <p class="chart-label">{{ chart.label }}</p>
+                  @if (chart.hint) {
+                    <p class="chart-hint">{{ chart.hint }}</p>
+                  }
                   <div class="chart-frame">
                     <app-plotly [figure]="chart.figure" />
                   </div>
@@ -183,21 +195,21 @@
         }
 
         <div>
-          <h2>Körpergrösse & Zimmerumfang</h2>
+          <h2>{{ i18n.m().hostHeightsUmfang }}</h2>
           <div class="box">
             @if (!recap.measures.length) {
-              <p class="muted">Keine Einträge</p>
+              <p class="muted">{{ i18n.m().hostNoEntries }}</p>
             }
             <div class="table-wrap">
               <table class="data">
                 <thead>
                   <tr>
-                    <th>Team</th>
-                    <th>Person</th>
-                    <th>Rolle</th>
-                    <th>Grösse (cm)</th>
-                    <th>Umfang (m)</th>
-                    <th>Differenz (m)</th>
+                    <th>{{ i18n.m().playTeam }}</th>
+                    <th>{{ i18n.m().hostPerson }}</th>
+                    <th>{{ i18n.m().hostRole }}</th>
+                    <th>{{ i18n.m().hostHeightCm }}</th>
+                    <th>{{ i18n.m().hostUmfangM }}</th>
+                    <th>{{ i18n.m().hostDeltaM }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -218,17 +230,17 @@
         </div>
 
         <div>
-          <h2>Molekül Memory</h2>
+          <h2>{{ i18n.m().hostMemory }}</h2>
           <div class="box">
             <div class="table-wrap">
               <table class="data">
                 <thead>
                   <tr>
-                    <th>Team</th>
+                    <th>{{ i18n.m().playTeam }}</th>
                     @for (round of recap.memoryRounds; track round.index) {
                       <th>{{ round.index + 1 }}. {{ round.name }} ({{ round.correct }})</th>
                     }
-                    <th>Punkte</th>
+                    <th>{{ i18n.m().hostPoints }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -241,7 +253,8 @@
                             –
                           } @else {
                             <span [class.ok]="cell.ok" [class.bad]="!cell.ok">
-                              {{ cell.choice }} {{ cell.ok ? 'richtig' : 'falsch' }}
+                              {{ cell.choice }}
+                              {{ cell.ok ? i18n.m().hostRight : i18n.m().hostWrong }}
                             </span>
                           }
                         </td>
@@ -256,22 +269,22 @@
         </div>
 
         <div>
-          <h2>Klinische Studie</h2>
+          <h2>{{ i18n.m().hostStudy }}</h2>
           <div class="box">
             @if (!recap.study.length) {
-              <p class="muted">Keine Einträge</p>
+              <p class="muted">{{ i18n.m().hostNoEntries }}</p>
             }
             <div class="table-wrap">
               <table class="data">
                 <thead>
                   <tr>
-                    <th>Team</th>
-                    <th>Person</th>
-                    <th>Schokolade</th>
-                    <th>Vorher</th>
-                    <th>Nachher</th>
-                    <th>Delta</th>
-                    <th>Behandlung</th>
+                    <th>{{ i18n.m().playTeam }}</th>
+                    <th>{{ i18n.m().hostPerson }}</th>
+                    <th>{{ i18n.m().playChocolate }}</th>
+                    <th>{{ i18n.m().hostBefore }}</th>
+                    <th>{{ i18n.m().hostAfter }}</th>
+                    <th>{{ i18n.m().hostDelta }}</th>
+                    <th>{{ i18n.m().hostTreatment }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -293,15 +306,15 @@
         </div>
 
         <div>
-          <h2>Feedback</h2>
+          <h2>{{ i18n.m().hostFeedback }}</h2>
           <div class="box">
             <div class="table-wrap">
               <table class="data">
                 <thead>
                   <tr>
-                    <th>Team</th>
-                    <th>Sterne</th>
-                    <th>Kommentar</th>
+                    <th>{{ i18n.m().playTeam }}</th>
+                    <th>{{ i18n.m().hostStars }}</th>
+                    <th>{{ i18n.m().hostComment }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,7 +339,7 @@
 
 <ng-template #chartGallery>
   @if (!charts().length) {
-    <p class="muted">Noch keine Daten</p>
+    <p class="muted">{{ i18n.m().hostNoData }}</p>
   } @else {
     <div
       class="split"
@@ -337,6 +350,9 @@
       @for (chart of charts(); track chart.id) {
         <div class="box fill chart-card">
           <p class="chart-label">{{ chart.label }}</p>
+          @if (chart.hint) {
+            <p class="chart-hint">{{ chart.hint }}</p>
+          }
           <div class="chart-frame">
             <app-plotly [figure]="chart.figure" />
           </div>

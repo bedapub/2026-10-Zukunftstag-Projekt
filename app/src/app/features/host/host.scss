@@ -213,17 +213,25 @@ app-host,
   font-size: 0.95em;
 }
 
+.host-screen .chart-hint {
+  margin: 0 0 0.35em;
+  text-align: center;
+  color: var(--grey-2);
+  font-size: 0.78em;
+  line-height: 1.25;
+}
+
 .host-screen .chart-frame {
   width: 100%;
-  height: min(38vh, 20em);
-  min-height: 13em;
+  height: min(40vh, 22em);
+  min-height: 14.5em;
   padding: 0;
   border: 0;
   background: transparent;
 }
 
 .host-screen .split.three .chart-frame {
-  height: min(34vh, 18em);
+  height: min(36vh, 20em);
 }
 
 .host-screen .chart-frame app-plotly,
