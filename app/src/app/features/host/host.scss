@@ -385,7 +385,7 @@ app-host,
 }
 
 .host-screen .memory-show img {
-  width: min(52vmin, 18em);
+  width: min(68vmin, 24em);
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
@@ -395,8 +395,8 @@ app-host,
 .host-screen .mol-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.2vmin;
-  width: min(64vmin, 28em);
+  gap: 1.6vmin;
+  width: min(78vmin, 36em);
 }
 
 .host-screen .mol-grid figure {
@@ -418,8 +418,8 @@ app-host,
 }
 
 .host-screen .mol-frame img {
-  width: 80%;
-  height: 80%;
+  width: 94%;
+  height: 94%;
   object-fit: contain;
   aspect-ratio: 1;
   transform-origin: center;
@@ -558,12 +558,12 @@ app-host,
   }
 
   .host-screen .memory-show img {
-    width: min(72vw, 18em);
+    width: min(86vw, 24em);
   }
 
   .host-screen .mol-grid {
-    width: min(92vw, 28em);
-    gap: 8px;
+    width: min(96vw, 36em);
+    gap: 10px;
   }
 
   .host-screen .chart-frame,

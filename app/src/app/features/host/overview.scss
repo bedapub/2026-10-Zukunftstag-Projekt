@@ -18,14 +18,16 @@
 .settings .picks {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
+  width: min(280px, 100%);
 }
 
 .settings .pick {
-  min-height: 48px;
-  border: 0;
+  min-height: 40px;
+  border: 2px solid transparent;
   color: var(--white);
   font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .settings .pick.red {
@@ -37,8 +39,10 @@
 }
 
 .settings .pick.selected {
-  outline: 3px solid var(--roche-dark-blue);
+  outline: 4px solid #d4af37;
   outline-offset: 2px;
+  border-color: #f6e27a;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.35);
 }
 
 .host-actions {

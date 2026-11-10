@@ -47,7 +47,7 @@ export class PlayPage {
   >({});
   protected readonly rating = signal(0);
   protected readonly comment = signal('');
-  protected readonly stars = [1, 2, 3, 4, 5] as const;
+  protected readonly stars = [1, 2, 3, 4, 5, 6] as const;
   protected readonly painScale = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
   protected readonly moleculeImage = moleculeImage;
   protected readonly moleculeTransform = moleculeTransform;

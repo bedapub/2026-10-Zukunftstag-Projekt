@@ -22,18 +22,21 @@
 
 .tiny {
   grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(280px, 100%);
 }
 
 .tiny .choice,
 .choco {
-  min-height: 56px;
-  font-size: 1.1rem;
+  min-height: 40px;
+  font-size: 1rem;
 }
 
 .choco {
-  border: 0;
+  border: 2px solid transparent;
   color: var(--white);
   font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .choco.red {
@@ -44,7 +47,13 @@
   background: #1a1a1a;
 }
 
-.choco.selected,
+.choco.selected {
+  outline: 4px solid #d4af37;
+  outline-offset: 2px;
+  border-color: #f6e27a;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.35);
+}
+
 .mol-choice.selected {
   outline: 3px solid var(--roche-dark-blue);
   outline-offset: 2px;
@@ -97,8 +106,8 @@
 }
 
 .mol-frame img {
-  width: 70%;
-  height: 70%;
+  width: 92%;
+  height: 92%;
   object-fit: contain;
   transform-origin: center;
   background: transparent;
@@ -152,7 +161,7 @@
 
   .stars {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
   }
 
