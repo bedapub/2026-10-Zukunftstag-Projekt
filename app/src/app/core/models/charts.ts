@@ -100,6 +100,14 @@ function roleItems(items: NamedValue[], role: NamedValue['role']): NamedValue[] 
   return items.filter((item) => item.role === role);
 }
 
+function valueRange(values: number[], pad = 2): [number, number] {
+  if (!values.length) return [0, 1];
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  if (minVal === maxVal) return [minVal - pad, maxVal + pad];
+  return [Math.floor(minVal) - pad, Math.ceil(maxVal) + pad];
+}
+
 function splitHistogram(
   child: NamedValue[],
   parent: NamedValue[],
@@ -111,15 +119,50 @@ function splitHistogram(
   const childValues = child.map((item) => item.value);
   const parentValues = parent.map((item) => item.value);
   if (!childValues.length && !parentValues.length) return null;
-  const childBins = childValues.length ? sizeBins(childValues, binSize) : sizeBins(parentValues, binSize);
-  const parentBins = parentValues.length ? sizeBins(parentValues, binSize) : childBins;
+  const sharedBins = sizeBins([...childValues, ...parentValues], binSize);
+  const [xMin, xMax] = valueRange([...childValues, ...parentValues], 1);
+  const childMed = median(childValues);
+  const parentMed = median(parentValues);
+  const shapes: Record<string, unknown>[] = [];
+  if (childMed != null) {
+    shapes.push({
+      type: 'line',
+      xref: 'x',
+      yref: 'y domain',
+      x0: childMed,
+      x1: childMed,
+      y0: 0,
+      y1: 1,
+      line: { color: MEDIAN_COLOR, width: 3, dash: 'dash' },
+    });
+  }
+  if (parentMed != null) {
+    shapes.push({
+      type: 'line',
+      xref: 'x2',
+      yref: 'y2 domain',
+      x0: parentMed,
+      x1: parentMed,
+      y0: 0,
+      y1: 1,
+      line: { color: MEDIAN_COLOR, width: 3, dash: 'dash' },
+    });
+  }
+  const legend = {
+    type: 'scatter',
+    x: [null],
+    y: [null],
+    mode: 'lines',
+    name: 'Median',
+    line: { color: MEDIAN_COLOR, width: 3, dash: 'dash' },
+  };
   return {
     data: [
       {
         type: 'histogram',
         x: childValues,
         autobinx: false,
-        xbins: childBins,
+        xbins: sharedBins,
         marker: { color: CHILD_FILL, line: { color: EDGE, width: 3 } },
         hovertemplate: 'Frequenz: %{y}<extra></extra>',
         showlegend: false,
@@ -142,7 +185,7 @@ function splitHistogram(
         type: 'histogram',
         x: parentValues,
         autobinx: false,
-        xbins: parentBins,
+        xbins: sharedBins,
         marker: { color: PARENT_FILL, line: { color: EDGE, width: 3 } },
         hovertemplate: 'Frequenz: %{y}<extra></extra>',
         showlegend: false,
@@ -161,20 +204,28 @@ function splitHistogram(
         xaxis: 'x2',
         yaxis: 'y2',
       },
+      legend,
     ],
     layout: baseLayout({
-      grid: { rows: 1, columns: 2, pattern: 'independent' },
+      grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
       yaxis: {
-        title: yTitle,
+        title: `${yTitle} · Kind`,
         rangemode: 'tozero',
         dtick: 1,
         range: [0, Math.max(4, Math.ceil(Math.max(childValues.length, parentValues.length) * 0.5) + 1)],
       },
-      yaxis2: { matches: 'y', rangemode: 'tozero', dtick: 1 },
-      xaxis: { title: xTitleChild, tickangle: 0, automargin: true },
-      xaxis2: { title: xTitleParent, tickangle: 0, automargin: true },
-      showlegend: false,
-      margin: { t: 8, r: 12, b: 48, l: 44 },
+      yaxis2: {
+        title: `${yTitle} · Eltern`,
+        matches: 'y',
+        rangemode: 'tozero',
+        dtick: 1,
+      },
+      xaxis: { title: xTitleChild, tickangle: 0, automargin: true, range: [xMin, xMax], matches: 'x2' },
+      xaxis2: { title: xTitleParent, tickangle: 0, automargin: true, range: [xMin, xMax] },
+      shapes,
+      showlegend: true,
+      legend: { orientation: 'h', y: 1.12, x: 0.5, xanchor: 'center', font: { size: 11 } },
+      margin: { t: 28, r: 12, b: 48, l: 52 },
     }),
   };
 }
@@ -293,6 +344,7 @@ function scatterPairs(
     parentMedian?: number | null;
     childMedian?: number | null;
     regression?: boolean;
+    range?: [number, number];
   } = {},
 ): PlotFigure | null {
   if (!pairs.length) return null;
@@ -370,12 +422,36 @@ function scatterPairs(
       });
     }
   }
+  const [lo, hi] = options.range ?? valueRange([...xs, ...ys], 2);
+  shapes.push({
+    type: 'line',
+    x0: lo,
+    x1: hi,
+    y0: lo,
+    y1: hi,
+    line: { color: '#706b69', width: 2, dash: 'dot' },
+  });
+  traces.push({
+    type: 'scatter',
+    x: [null],
+    y: [null],
+    mode: 'lines',
+    name: 'Diagonale',
+    line: { color: '#706b69', width: 2, dash: 'dot' },
+  });
   return {
     data: traces,
     layout: baseLayout({
       title: options.title,
-      xaxis: { title: xTitle, zeroline: false },
-      yaxis: { title: yTitle, zeroline: false },
+      xaxis: { title: xTitle, zeroline: false, range: [lo, hi], automargin: true },
+      yaxis: {
+        title: yTitle,
+        zeroline: false,
+        range: [lo, hi],
+        scaleanchor: 'x',
+        scaleratio: 1,
+        automargin: true,
+      },
       shapes,
       showlegend: traces.length > 1,
     }),
@@ -460,70 +536,77 @@ function stackedUmfang(items: NamedValue[], truth: number): PlotFigure | null {
   };
 }
 
-function deltaBars(
-  pairs: TeamPair[],
-  truth: number,
-  role: 'parent' | 'child',
-  axis: { x: string; y: string },
-): Record<string, unknown>[] {
-  const rows = pairs
-    .map((pair) => ({
-      teamName: role === 'parent' ? pair.teamName : pair.teamName,
-      personName: role === 'parent' ? pair.parentName : pair.childName,
-      delta: round1((role === 'parent' ? pair.parentValue : pair.childValue) - truth),
-    }))
-    .sort((a, b) => a.delta - b.delta);
-  const winners = [...rows]
-    .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
-    .slice(0, 3)
-    .map((row) => row.teamName);
-  const y = rows.map((row) => row.teamName);
-  const x = rows.map((row) => row.delta);
-  const winnerY = rows.filter((row) => winners.includes(row.teamName)).map((row) => row.teamName);
-  const winnerX = winnerY.map(() => Math.max(...x, 0.1) * 0.08 || 0.2);
-  return [
-    {
-      type: 'bar',
-      orientation: 'h',
-      x,
-      y,
-      name: role === 'parent' ? 'Eltern' : 'Kind',
-      marker: { color: role === 'parent' ? PARENT_POINT : CHILD_POINT },
-      customdata: rows.map((row) => [row.personName, row.delta]),
-      hovertemplate: '<b>%{y}</b><br>%{customdata[0]}: %{customdata[1]} m<extra></extra>',
-      showlegend: false,
-      xaxis: axis.x,
-      yaxis: axis.y,
-    },
-    {
-      type: 'scatter',
-      x: winnerX,
-      y: winnerY,
-      mode: 'markers',
-      marker: { symbol: 'star', size: 16, color: TRUTH_COLOR },
-      name: 'Top 3',
-      hoverinfo: 'skip',
-      showlegend: axis.x === 'x',
-      xaxis: axis.x,
-      yaxis: axis.y,
-    },
-  ];
-}
-
 function umfangDeltaFigure(pairs: TeamPair[], truth: number): PlotFigure | null {
   if (!pairs.length) return null;
+  const rows = pairs
+    .flatMap((pair) => [
+      {
+        label: `${pair.teamName} · Eltern`,
+        personName: pair.parentName,
+        role: 'Eltern' as const,
+        delta: round1(pair.parentValue - truth),
+        color: PARENT_POINT,
+      },
+      {
+        label: `${pair.teamName} · Kind`,
+        personName: pair.childName,
+        role: 'Kind' as const,
+        delta: round1(pair.childValue - truth),
+        color: CHILD_POINT,
+      },
+    ])
+    .sort((a, b) => a.delta - b.delta);
+  const winners = new Set(
+    [...rows]
+      .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
+      .slice(0, 3)
+      .map((row) => row.label),
+  );
+  const maxAbs = Math.max(...rows.map((row) => Math.abs(row.delta)), 0.5);
   return {
     data: [
-      ...deltaBars(pairs, truth, 'parent', { x: 'x', y: 'y' }),
-      ...deltaBars(pairs, truth, 'child', { x: 'x2', y: 'y2' }),
+      {
+        type: 'bar',
+        orientation: 'h',
+        x: rows.map((row) => row.delta),
+        y: rows.map((row) => row.label),
+        marker: { color: rows.map((row) => row.color) },
+        customdata: rows.map((row) => [row.personName, row.role, row.delta]),
+        hovertemplate:
+          '<b>%{y}</b><br>%{customdata[0]} (%{customdata[1]}): %{customdata[2]} m<extra></extra>',
+        showlegend: false,
+      },
+      {
+        type: 'scatter',
+        x: rows.filter((row) => winners.has(row.label)).map(() => maxAbs * 0.08),
+        y: rows.filter((row) => winners.has(row.label)).map((row) => row.label),
+        mode: 'markers',
+        marker: { symbol: 'star', size: 16, color: TRUTH_COLOR },
+        name: 'Top 3',
+        hoverinfo: 'skip',
+      },
+      {
+        type: 'scatter',
+        x: [null],
+        y: [null],
+        mode: 'markers',
+        marker: { size: 10, color: PARENT_POINT },
+        name: 'Eltern',
+      },
+      {
+        type: 'scatter',
+        x: [null],
+        y: [null],
+        mode: 'markers',
+        marker: { size: 10, color: CHILD_POINT },
+        name: 'Kind',
+      },
     ],
     layout: baseLayout({
-      grid: { rows: 1, columns: 2, pattern: 'independent' },
-      xaxis: { title: 'Eltern · Differenz [meter]', zeroline: true, zerolinewidth: 2 },
-      xaxis2: { title: 'Kind · Differenz [meter]', zeroline: true, zerolinewidth: 2 },
+      xaxis: { title: 'Unterschied [meter]', zeroline: true, zerolinewidth: 2 },
       yaxis: { automargin: true },
-      yaxis2: { automargin: true },
-      margin: { t: 8, r: 12, b: 44, l: 72 },
+      showlegend: true,
+      margin: { t: 28, r: 16, b: 48, l: 120 },
     }),
   };
 }
@@ -534,31 +617,46 @@ function memoryVoteScatterFigure(session: PublicSession): PlotFigure | null {
   if (!answers.length) return null;
   const xPos: Record<string, number> = { A: 1, B: 2, C: 3, D: 4 };
   const correct = session.memoryRounds[round]?.correctLabel;
-  return {
-    data: [
-      {
-        type: 'scatter',
-        x: answers.map((item) => jitter(`${item.teamId}:${round}`, xPos[item.choice], 0.16)),
-        y: answers.map((item) => jitter(`${item.teamId}:y:${round}`, 1, 0.28)),
-        mode: 'markers',
-        marker: {
-          size: 14,
-          color: answers.map((item) => CHOICE_COLORS[item.choice]),
-          line: {
-            color: answers.map((item) => (item.choice === correct ? '#022366' : 'rgba(0,0,0,0)')),
-            width: answers.map((item) => (item.choice === correct ? 2 : 0)),
-          },
+  const traces: Record<string, unknown>[] = [
+    {
+      type: 'scatter',
+      x: answers.map((item) => jitter(`${item.teamId}:${round}`, xPos[item.choice], 0.16)),
+      y: answers.map((item) => jitter(`${item.teamId}:y:${round}`, 1, 0.28)),
+      mode: 'markers',
+      marker: {
+        size: 14,
+        color: answers.map((item) => CHOICE_COLORS[item.choice]),
+        line: {
+          color: answers.map((item) => (item.choice === correct ? '#022366' : 'rgba(0,0,0,0)')),
+          width: answers.map((item) => (item.choice === correct ? 2 : 0)),
         },
-        customdata: answers.map((item) => {
-          const team = session.teams.find((row) => row.id === item.teamId)?.name ?? item.teamId;
-          return [team, item.choice, item.choice === correct ? 'richtig' : 'falsch'];
-        }),
-        hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} · %{customdata[2]}<extra></extra>',
       },
-    ],
+      customdata: answers.map((item) => {
+        const team = session.teams.find((row) => row.id === item.teamId)?.name ?? item.teamId;
+        return [team, item.choice, item.choice === correct ? 'richtig' : 'falsch'];
+      }),
+      hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} · %{customdata[2]}<extra></extra>',
+      showlegend: false,
+    },
+  ];
+  if (correct) {
+    traces.push({
+      type: 'scatter',
+      x: [xPos[correct]],
+      y: [1.55],
+      mode: 'markers+text',
+      marker: { symbol: 'star', size: 18, color: '#d4af37', line: { color: '#022366', width: 1 } },
+      text: ['richtig'],
+      textposition: 'top center',
+      hoverinfo: 'skip',
+      showlegend: false,
+    });
+  }
+  return {
+    data: traces,
     layout: baseLayout({
       xaxis: { title: 'Antwort', tickvals: [1, 2, 3, 4], ticktext: ['A', 'B', 'C', 'D'], range: [0.4, 4.6] },
-      yaxis: { visible: false, range: [0.35, 1.65], fixedrange: true },
+      yaxis: { visible: false, range: [0.35, 1.75], fixedrange: true },
       showlegend: false,
       margin: { t: 8, r: 12, b: 40, l: 16 },
     }),
@@ -593,33 +691,52 @@ function memoryScoreScatterFigure(session: PublicSession): PlotFigure | null {
 function memoryVoteFigure(session: PublicSession): PlotFigure | null {
   const buckets = memoryVoteBuckets(session, session.memoryRound);
   if (!buckets.some((bucket) => bucket.count)) return null;
-  return {
-    data: [
-      {
-        type: 'bar',
-        x: buckets.map((bucket) => bucket.label),
-        y: buckets.map((bucket) => bucket.count),
-        marker: {
-          color: buckets.map((bucket) => CHOICE_COLORS[bucket.label]),
-          line: {
-            color: buckets.map((bucket) => (bucket.correct ? '#022366' : 'rgba(0,0,0,0)')),
-            width: buckets.map((bucket) => (bucket.correct ? 4 : 0)),
-          },
+  const correct = buckets.find((bucket) => bucket.correct);
+  const traces: Record<string, unknown>[] = [
+    {
+      type: 'bar',
+      x: buckets.map((bucket) => bucket.label),
+      y: buckets.map((bucket) => bucket.count),
+      marker: {
+        color: buckets.map((bucket) => CHOICE_COLORS[bucket.label]),
+        line: {
+          color: buckets.map((bucket) => (bucket.correct ? '#022366' : 'rgba(0,0,0,0)')),
+          width: buckets.map((bucket) => (bucket.correct ? 4 : 0)),
         },
-        customdata: buckets.map((bucket) => [
-          bucket.teams.join(', ') || 'keine Stimmen',
-          bucket.correct ? 'richtig' : '',
-        ]),
-        hovertemplate: '<b>%{x}</b><br>%{y} Teams<br>%{customdata[0]}<extra></extra>',
-        text: buckets.map((bucket) => String(bucket.count)),
-        textposition: 'outside',
       },
-    ],
+      customdata: buckets.map((bucket) => [
+        bucket.teams.join(', ') || 'keine Stimmen',
+        bucket.correct ? 'richtig' : '',
+      ]),
+      hovertemplate: '<b>%{x}</b><br>%{y} Teams<br>%{customdata[0]}<extra></extra>',
+      text: buckets.map((bucket) => `${bucket.count}`),
+      textposition: 'outside',
+      showlegend: false,
+    },
+  ];
+  if (correct) {
+    traces.push({
+      type: 'scatter',
+      x: [correct.label],
+      y: [correct.count + 0.35],
+      mode: 'markers',
+      marker: { symbol: 'star', size: 18, color: '#d4af37', line: { color: '#022366', width: 1 } },
+      hoverinfo: 'skip',
+      showlegend: false,
+    });
+  }
+  return {
+    data: traces,
     layout: baseLayout({
-      yaxis: { title: 'Teams', rangemode: 'tozero', dtick: 1 },
+      yaxis: {
+        title: 'Antworten (Anzahl Teams)',
+        rangemode: 'tozero',
+        dtick: 1,
+        range: [0, Math.max(3, ...buckets.map((bucket) => bucket.count)) + 1.2],
+      },
       xaxis: { title: 'Antwort' },
       showlegend: false,
-      margin: { t: 8, r: 12, b: 40, l: 44 },
+      margin: { t: 16, r: 12, b: 40, l: 56 },
     }),
   };
 }
@@ -715,22 +832,39 @@ function studyPanel(
   return traces;
 }
 
+function chocolateLabels(session: PublicSession): { left: string; right: string; leftKey: 'placebo' | 'drug'; rightKey: 'placebo' | 'drug' } {
+  const drug = session.studyDrugColor === 'red' ? 'Rot' : 'Schwarz';
+  const placebo = session.studyDrugColor === 'red' ? 'Schwarz' : 'Rot';
+  // Left = Rot, Right = Schwarz for consistent spatial mapping
+  if (session.studyDrugColor === 'red') {
+    return { left: `${drug} · Medikament`, right: `${placebo} · Placebo`, leftKey: 'drug', rightKey: 'placebo' };
+  }
+  return { left: `${placebo} · Placebo`, right: `${drug} · Medikament`, leftKey: 'placebo', rightKey: 'drug' };
+}
+
 function studyFigure(session: PublicSession): PlotFigure | null {
   const rows = studyPeople(session);
   if (!rows.length) return null;
-  const placebo = rows.filter((row) => row.treatment === 'placebo');
-  const drug = rows.filter((row) => row.treatment === 'drug');
+  const labels = chocolateLabels(session);
+  const left = rows.filter((row) => row.treatment === labels.leftKey);
+  const right = rows.filter((row) => row.treatment === labels.rightKey);
   return {
     data: [
-      ...studyPanel(placebo, 'Placebo', PLACEBO_POINT, { x: 'x', y: 'y' }),
-      ...studyPanel(drug, 'Medikament', DRUG_POINT, { x: 'x2', y: 'y2' }),
+      ...studyPanel(left, labels.left, labels.leftKey === 'drug' ? DRUG_POINT : PLACEBO_POINT, {
+        x: 'x',
+        y: 'y',
+      }),
+      ...studyPanel(right, labels.right, labels.rightKey === 'drug' ? DRUG_POINT : PLACEBO_POINT, {
+        x: 'x2',
+        y: 'y2',
+      }),
     ],
     layout: baseLayout({
       grid: { rows: 1, columns: 2, pattern: 'independent' },
       yaxis: { title: 'Schmerz', range: [-0.4, 10.4], dtick: 1 },
       yaxis2: { matches: 'y', range: [-0.4, 10.4], dtick: 1 },
-      xaxis: { title: 'Placebo', tickvals: [1, 2], ticktext: ['Vor', 'Nach'] },
-      xaxis2: { title: 'Medikament', tickvals: [1, 2], ticktext: ['Vor', 'Nach'] },
+      xaxis: { title: labels.left, tickvals: [1, 2], ticktext: ['Vor', 'Nach'] },
+      xaxis2: { title: labels.right, tickvals: [1, 2], ticktext: ['Vor', 'Nach'] },
       showlegend: false,
     }),
   };
@@ -739,9 +873,20 @@ function studyFigure(session: PublicSession): PlotFigure | null {
 function studyDeltaFigure(session: PublicSession): PlotFigure | null {
   const rows = studyPeople(session);
   if (!rows.length) return null;
+  const labels = chocolateLabels(session);
   const groups = [
-    { key: 'placebo' as const, label: 'Placebo', color: PLACEBO_POINT, pos: 1 },
-    { key: 'drug' as const, label: 'Medikament', color: DRUG_POINT, pos: 2 },
+    {
+      key: labels.leftKey,
+      label: labels.left.split(' · ')[0],
+      color: labels.leftKey === 'drug' ? DRUG_POINT : PLACEBO_POINT,
+      pos: 1,
+    },
+    {
+      key: labels.rightKey,
+      label: labels.right.split(' · ')[0],
+      color: labels.rightKey === 'drug' ? DRUG_POINT : PLACEBO_POINT,
+      pos: 2,
+    },
   ];
   const traces: Record<string, unknown>[] = [];
   for (const group of groups) {
@@ -786,7 +931,11 @@ function studyDeltaFigure(session: PublicSession): PlotFigure | null {
     data: traces,
     layout: baseLayout({
       yaxis: { title: 'Differenz (Nach − Vor)', zeroline: true, zerolinewidth: 2 },
-      xaxis: { tickvals: [1, 2], ticktext: ['Placebo', 'Medikament'], range: [0.4, 2.6] },
+      xaxis: {
+        tickvals: [1, 2],
+        ticktext: groups.map((group) => group.label),
+        range: [0.4, 2.6],
+      },
       shapes: [
         {
           type: 'line',
@@ -805,14 +954,15 @@ function studyDeltaFigure(session: PublicSession): PlotFigure | null {
 
 function feedbackFigure(session: PublicSession): PlotFigure | null {
   if (!session.feedback.length) return null;
-  const counts = [1, 2, 3, 4, 5].map(
+  const scale = [1, 2, 3, 4, 5, 6];
+  const counts = scale.map(
     (n) => session.feedback.filter((item) => item.rating === n).length,
   );
   return {
     data: [
       {
         type: 'bar',
-        x: ['1 Stern', '2 Sterne', '3 Sterne', '4 Sterne', '5 Sterne'],
+        x: scale.map((n) => String(n)),
         y: counts,
         marker: { color: '#ff7d29', line: { color: EDGE, width: 2 } },
         text: counts.map(String),
@@ -821,6 +971,7 @@ function feedbackFigure(session: PublicSession): PlotFigure | null {
       },
     ],
     layout: baseLayout({
+      xaxis: { title: 'Bewertung (1–6)', dtick: 1 },
       yaxis: { title: 'Teams', rangemode: 'tozero', dtick: 1 },
       showlegend: false,
       margin: { t: 24, r: 16, b: 56, l: 56 },
@@ -837,6 +988,7 @@ export function heightCharts(session: PublicSession): ChartSpec[] {
   const items = heightValues(session);
   const child = roleItems(items, 'child');
   const parent = roleItems(items, 'parent');
+  const range = valueRange(items.map((item) => item.value), 2);
   const charts: ChartSpec[] = [];
   push(charts, {
     id: 'height-hist',
@@ -846,8 +998,8 @@ export function heightCharts(session: PublicSession): ChartSpec[] {
       child,
       parent,
       2,
-      'Kind [cm]',
-      'Eltern [cm]',
+      'Körpergrösse Kind [cm]',
+      'Körpergrösse Eltern [cm]',
       'Frequenz',
     ),
   });
@@ -861,7 +1013,7 @@ export function heightCharts(session: PublicSession): ChartSpec[] {
     id: 'height-scatter',
     label: 'Scatterplot',
     group: 'Körpergrösse',
-    figure: scatterPairs(pairByTeam(items), 'Eltern [cm]', 'Kind [cm]', 'cm'),
+    figure: scatterPairs(pairByTeam(items), 'Eltern [cm]', 'Kind [cm]', 'cm', { range }),
   });
   return charts;
 }
@@ -873,18 +1025,11 @@ export function umfangCharts(session: PublicSession): ChartSpec[] {
     id: 'umfang-hist',
     label: 'Histogram',
     group: 'Zimmerumfang',
-    figure: splitHistogram(
-      roleItems(items, 'child'),
-      roleItems(items, 'parent'),
-      3,
-      'Kind [m]',
-      'Eltern [m]',
-      'Frequenz',
-    ),
+    figure: stackedUmfang(items, session.umfangTruth),
   });
   push(charts, {
     id: 'umfang-delta',
-    label: 'Diverging Bar Chart',
+    label: 'Balkendiagramm',
     group: 'Zimmerumfang',
     figure: umfangDeltaFigure(pairByTeam(items), session.umfangTruth),
   });
