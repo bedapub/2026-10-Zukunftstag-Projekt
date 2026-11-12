@@ -14,6 +14,8 @@ export interface ChartCopy {
   teams: string;
   fit: string;
   top3: string;
+  top3Parents: string;
+  top3Children: string;
   heightChildCm: string;
   heightParentCm: string;
   heightCm: string;
@@ -71,6 +73,8 @@ const de: ChartCopy = {
   teams: 'Teams',
   fit: 'Fit (Regression)',
   top3: 'Top 3',
+  top3Parents: 'Top 3 Eltern',
+  top3Children: 'Top 3 Kinder',
   heightChildCm: 'Körpergrösse Kind [cm]',
   heightParentCm: 'Körpergrösse Eltern [cm]',
   heightCm: 'Körpergrösse [cm]',
@@ -128,6 +132,8 @@ const en: ChartCopy = {
   teams: 'Teams',
   fit: 'Fit (regression)',
   top3: 'Top 3',
+  top3Parents: 'Top 3 parents',
+  top3Children: 'Top 3 children',
   heightChildCm: 'Child height [cm]',
   heightParentCm: 'Parent height [cm]',
   heightCm: 'Height [cm]',

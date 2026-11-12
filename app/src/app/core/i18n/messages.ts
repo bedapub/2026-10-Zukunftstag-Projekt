@@ -24,6 +24,14 @@ export interface Messages {
   joinSubmit: string;
   joinPinMissing: string;
   joinFailed: string;
+  joinRejoinTitle: string;
+  joinRejoinHint: string;
+  joinPickTeam: string;
+  joinNoFreeTeams: string;
+  joinTeamBusy: string;
+  joinPeople: string;
+  joinCreateNew: string;
+  joinBackToTeams: string;
 
   playEnd: string;
   playTeam: string;
@@ -145,6 +153,14 @@ const de: Messages = {
   joinSubmit: 'Beitreten',
   joinPinMissing: 'PIN fehlt',
   joinFailed: 'Beitritt fehlgeschlagen',
+  joinRejoinTitle: 'Team wählen',
+  joinRejoinHint: 'Das Spiel läuft schon. Wähle dein Team (nur freie Plätze).',
+  joinPickTeam: 'Mit diesem Team weiterspielen',
+  joinNoFreeTeams: 'Aktuell ist kein freies Team verfügbar.',
+  joinTeamBusy: 'Dieses Team ist bereits auf einem anderen Gerät aktiv.',
+  joinPeople: 'Personen',
+  joinCreateNew: 'Neues Team erstellen',
+  joinBackToTeams: 'Zurück zur Team-Auswahl',
 
   playEnd: 'Ende',
   playTeam: 'Team',
@@ -275,6 +291,14 @@ const en: Messages = {
   joinSubmit: 'Join',
   joinPinMissing: 'PIN missing',
   joinFailed: 'Could not join',
+  joinRejoinTitle: 'Choose your team',
+  joinRejoinHint: 'The game has already started. Pick your team (free seats only).',
+  joinPickTeam: 'Continue with this team',
+  joinNoFreeTeams: 'No free team is available right now.',
+  joinTeamBusy: 'This team is already active on another device.',
+  joinPeople: 'People',
+  joinCreateNew: 'Create a new team',
+  joinBackToTeams: 'Back to team selection',
 
   playEnd: 'End',
   playTeam: 'Team',

@@ -83,6 +83,12 @@ export interface MemoryRoundPublic {
   correctLabel?: MemoryChoice;
 }
 
+export interface TeamPresence {
+  teamId: string;
+  deviceId: string;
+  lastSeen: number;
+}
+
 export interface PublicSession {
   code: string;
   game: GameId;
@@ -92,6 +98,8 @@ export interface PublicSession {
   studyUnblinded: boolean;
   studyDrugColor?: ChocolateColor;
   lang: GameLang;
+  /** Team IDs currently claimed by an active device. */
+  occupiedTeamIds: string[];
   memoryRounds: MemoryRoundPublic[];
   teams: Team[];
   heights: HeightsAnswer[];

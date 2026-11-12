@@ -20,12 +20,26 @@ export interface PlotFigure {
   layout: Record<string, unknown>;
 }
 
+export interface ChartPodiumEntry {
+  rank: number;
+  teamName: string;
+  personName: string;
+  valueLabel: string;
+}
+
+export interface ChartPodium {
+  title: string;
+  role: 'parent' | 'child';
+  entries: ChartPodiumEntry[];
+}
+
 export interface ChartSpec {
   id: string;
   label: string;
   group: string;
   hint?: string;
   figure: PlotFigure;
+  podiums?: ChartPodium[];
 }
 
 const CHILD_FILL = '#FFF8BC';
@@ -589,79 +603,126 @@ function stackedUmfang(items: NamedValue[], truth: number, t: ChartCopy = chartC
   };
 }
 
-function umfangDeltaFigure(pairs: TeamPair[], truth: number, t: ChartCopy = chartCopy('de')): PlotFigure | null {
+function topClosest(
+  rows: { label: string; personName: string; teamName: string; roleKey: 'parent' | 'child'; delta: number }[],
+  roleKey: 'parent' | 'child',
+  limit = 3,
+) {
+  return [...rows]
+    .filter((row) => row.roleKey === roleKey)
+    .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta) || a.delta - b.delta)
+    .slice(0, limit)
+    .map((row, index) => ({
+      rank: index + 1,
+      teamName: row.teamName,
+      personName: row.personName,
+      valueLabel: `${row.delta > 0 ? '+' : ''}${row.delta} m`,
+      label: row.label,
+    }));
+}
+
+function umfangDeltaBundle(
+  pairs: TeamPair[],
+  truth: number,
+  t: ChartCopy = chartCopy('de'),
+): { figure: PlotFigure; podiums: ChartPodium[] } | null {
   if (!pairs.length) return null;
   const rows = pairs
     .flatMap((pair) => [
       {
         label: `${pair.teamName} · ${t.parents}`,
+        teamName: pair.teamName,
         personName: pair.parentName,
         role: t.parents,
+        roleKey: 'parent' as const,
         delta: round1(pair.parentValue - truth),
         color: PARENT_POINT,
       },
       {
         label: `${pair.teamName} · ${t.child}`,
+        teamName: pair.teamName,
         personName: pair.childName,
         role: t.child,
+        roleKey: 'child' as const,
         delta: round1(pair.childValue - truth),
         color: CHILD_POINT,
       },
     ])
     .sort((a, b) => a.delta - b.delta);
-  const winners = new Set(
-    [...rows]
-      .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
-      .slice(0, 3)
-      .map((row) => row.label),
-  );
+  const topParents = topClosest(rows, 'parent');
+  const topChildren = topClosest(rows, 'child');
+  const winners = new Set([...topParents, ...topChildren].map((row) => row.label));
   const maxAbs = Math.max(...rows.map((row) => Math.abs(row.delta)), 0.5);
   return {
-    data: [
+    figure: {
+      data: [
+        {
+          type: 'bar',
+          orientation: 'h',
+          x: rows.map((row) => row.delta),
+          y: rows.map((row) => row.label),
+          marker: { color: rows.map((row) => row.color) },
+          customdata: rows.map((row) => [row.personName, row.role, row.delta]),
+          hovertemplate:
+            '<b>%{y}</b><br>%{customdata[0]} (%{customdata[1]}): %{customdata[2]} m<extra></extra>',
+          showlegend: false,
+        },
+        {
+          type: 'scatter',
+          x: rows.filter((row) => winners.has(row.label)).map(() => maxAbs * 0.08),
+          y: rows.filter((row) => winners.has(row.label)).map((row) => row.label),
+          mode: 'markers',
+          marker: { symbol: 'star', size: 16, color: TRUTH_COLOR },
+          name: t.top3,
+          hoverinfo: 'skip',
+        },
+        {
+          type: 'scatter',
+          x: [null],
+          y: [null],
+          mode: 'markers',
+          marker: { size: 10, color: PARENT_POINT },
+          name: t.parents,
+        },
+        {
+          type: 'scatter',
+          x: [null],
+          y: [null],
+          mode: 'markers',
+          marker: { size: 10, color: CHILD_POINT },
+          name: t.child,
+        },
+      ],
+      layout: baseLayout({
+        xaxis: { title: t.umfangDiffM, zeroline: true, zerolinewidth: 2, automargin: true },
+        yaxis: { title: t.teamRole, automargin: true },
+        showlegend: true,
+        legend: LEGEND_BELOW,
+        margin: { t: 12, r: 16, b: 72, l: 120 },
+      }),
+    },
+    podiums: [
       {
-        type: 'bar',
-        orientation: 'h',
-        x: rows.map((row) => row.delta),
-        y: rows.map((row) => row.label),
-        marker: { color: rows.map((row) => row.color) },
-        customdata: rows.map((row) => [row.personName, row.role, row.delta]),
-        hovertemplate:
-          '<b>%{y}</b><br>%{customdata[0]} (%{customdata[1]}): %{customdata[2]} m<extra></extra>',
-        showlegend: false,
+        title: t.top3Parents,
+        role: 'parent',
+        entries: topParents.map(({ rank, teamName, personName, valueLabel }) => ({
+          rank,
+          teamName,
+          personName,
+          valueLabel,
+        })),
       },
       {
-        type: 'scatter',
-        x: rows.filter((row) => winners.has(row.label)).map(() => maxAbs * 0.08),
-        y: rows.filter((row) => winners.has(row.label)).map((row) => row.label),
-        mode: 'markers',
-        marker: { symbol: 'star', size: 16, color: TRUTH_COLOR },
-        name: t.top3,
-        hoverinfo: 'skip',
-      },
-      {
-        type: 'scatter',
-        x: [null],
-        y: [null],
-        mode: 'markers',
-        marker: { size: 10, color: PARENT_POINT },
-        name: t.parents,
-      },
-      {
-        type: 'scatter',
-        x: [null],
-        y: [null],
-        mode: 'markers',
-        marker: { size: 10, color: CHILD_POINT },
-        name: t.child,
+        title: t.top3Children,
+        role: 'child',
+        entries: topChildren.map(({ rank, teamName, personName, valueLabel }) => ({
+          rank,
+          teamName,
+          personName,
+          valueLabel,
+        })),
       },
     ],
-    layout: baseLayout({
-      xaxis: { title: t.umfangDiffM, zeroline: true, zerolinewidth: 2, automargin: true },
-      yaxis: { title: t.teamRole, automargin: true },
-      showlegend: true,
-      legend: LEGEND_BELOW,
-      margin: { t: 12, r: 16, b: 72, l: 120 },
-    }),
   };
 }
 
@@ -1073,7 +1134,10 @@ function feedbackFigure(session: PublicSession, t: ChartCopy = chartCopy('de')):
   };
 }
 
-function push(charts: ChartSpec[], spec: Omit<ChartSpec, 'figure'> & { figure: PlotFigure | null }): void {
+function push(
+  charts: ChartSpec[],
+  spec: Omit<ChartSpec, 'figure'> & { figure: PlotFigure | null },
+): void {
   if (!spec.figure) return;
   charts.push(spec as ChartSpec);
 }
@@ -1131,11 +1195,13 @@ export function umfangCharts(session: PublicSession, lang: Lang = 'de'): ChartSp
     group: t.umfangGroup,
     figure: stackedUmfang(items, session.umfangTruth, t),
   });
+  const delta = umfangDeltaBundle(pairByTeam(items), session.umfangTruth, t);
   push(charts, {
     id: 'umfang-delta',
     label: t.barChart,
     group: t.umfangGroup,
-    figure: umfangDeltaFigure(pairByTeam(items), session.umfangTruth, t),
+    figure: delta?.figure ?? null,
+    podiums: delta?.podiums,
   });
   return charts;
 }

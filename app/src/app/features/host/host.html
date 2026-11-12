@@ -97,8 +97,11 @@
         </section>
       }
       @if (s.stage === 'play') {
-        <section class="stage center">
+        <section class="stage center memory-play">
           <h1>{{ i18n.m().hostMemoryQuestion }}</h1>
+          <div class="box count-box">
+            <p class="count">{{ submitted() }}</p>
+          </div>
           <div class="mol-grid">
             @for (option of round.options; track option.label) {
               <figure class="box">
@@ -188,6 +191,25 @@
                   <div class="chart-frame">
                     <app-plotly [figure]="chart.figure" />
                   </div>
+                  @if (chart.podiums?.length) {
+                    <div class="compare podium-boards">
+                      @for (board of chart.podiums; track board.title) {
+                        <div class="podium-board" [class.parent]="board.role === 'parent'" [class.child]="board.role === 'child'">
+                          <p class="podium-title">{{ board.title }}</p>
+                          <ul class="podium">
+                            @for (entry of board.entries; track entry.rank + entry.personName) {
+                              <li>
+                                <b>{{ entry.rank }}</b>
+                                <strong>{{ entry.personName }}</strong>
+                                <em>{{ entry.valueLabel }}</em>
+                                <span>{{ entry.teamName }}</span>
+                              </li>
+                            }
+                          </ul>
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -356,6 +378,25 @@
           <div class="chart-frame">
             <app-plotly [figure]="chart.figure" />
           </div>
+          @if (chart.podiums?.length) {
+            <div class="compare podium-boards">
+              @for (board of chart.podiums; track board.title) {
+                <div class="podium-board" [class.parent]="board.role === 'parent'" [class.child]="board.role === 'child'">
+                  <p class="podium-title">{{ board.title }}</p>
+                  <ul class="podium">
+                    @for (entry of board.entries; track entry.rank + entry.personName) {
+                      <li>
+                        <b>{{ entry.rank }}</b>
+                        <strong>{{ entry.personName }}</strong>
+                        <em>{{ entry.valueLabel }}</em>
+                        <span>{{ entry.teamName }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
     </div>

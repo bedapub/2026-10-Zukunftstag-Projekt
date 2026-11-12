@@ -9,12 +9,14 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { initDatabase } from './server/db';
 import {
+  claimSeat,
   createSession,
   getHost,
   getPublic,
   joinTeam,
   deleteSession,
   listSessions,
+  releaseSeat,
   submitFeedback,
   submitHeights,
   submitMemory,
@@ -97,6 +99,19 @@ async function handleApi(req: Request, res: Response): Promise<void> {
   }
   if (req.method === 'POST' && tail === 'join') {
     res.json(await joinTeam(code, req.body));
+    return;
+  }
+  if (req.method === 'POST' && tail === 'seat') {
+    res.json(await claimSeat(code, req.body));
+    return;
+  }
+  if (req.method === 'DELETE' && tail === 'seat') {
+    res.json(
+      await releaseSeat(code, {
+        teamId: String(req.body?.teamId ?? req.query['teamId'] ?? ''),
+        deviceId: String(req.body?.deviceId ?? req.query['deviceId'] ?? ''),
+      }),
+    );
     return;
   }
   if (req.method === 'PATCH' && !tail) {

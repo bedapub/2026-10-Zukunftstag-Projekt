@@ -54,13 +54,35 @@ export class SessionApi {
 
   join(
     code: string,
-    payload: { teamName: string; people: { role: Person['role']; name: string }[] },
+    payload: {
+      teamName: string;
+      people: { role: Person['role']; name: string }[];
+      deviceId?: string;
+    },
   ): Promise<{ team: Team; session: PublicSession }> {
     return firstValueFrom(
       this.http.post<{ team: Team; session: PublicSession }>(
         `/api/sessions/${code}/join`,
         payload,
       ),
+    );
+  }
+
+  claimSeat(
+    code: string,
+    payload: { teamId: string; deviceId: string },
+  ): Promise<{ team: Team; session: PublicSession }> {
+    return firstValueFrom(
+      this.http.post<{ team: Team; session: PublicSession }>(
+        `/api/sessions/${code}/seat`,
+        payload,
+      ),
+    );
+  }
+
+  releaseSeat(code: string, payload: { teamId: string; deviceId: string }): Promise<{ ok: boolean }> {
+    return firstValueFrom(
+      this.http.delete<{ ok: boolean }>(`/api/sessions/${code}/seat`, { body: payload }),
     );
   }
 

@@ -20,6 +20,7 @@ import {
   PublicSession,
   Team,
 } from '../../core/models/session';
+import { getDeviceId } from '../../core/services/device-id';
 import { SessionApi } from '../../core/services/session-api';
 import { RocheHeader } from '../../shared/components/roche-header';
 
@@ -54,6 +55,7 @@ export class PlayPage {
   protected readonly moleculeTransform = moleculeTransform;
   private lastPayload = '';
   private lastPhase = '';
+  private lastSeatAt = 0;
 
   constructor() {
     afterNextRender(() => {
@@ -62,6 +64,7 @@ export class PlayPage {
         .subscribe(() => void this.refresh());
       void this.refresh(true);
     });
+    this.destroyRef.onDestroy(() => this.releaseSeatBestEffort());
   }
 
   private sessionCode(): string {
@@ -226,6 +229,13 @@ export class PlayPage {
       const session = await this.api.get(this.sessionCode());
       this.i18n.useGameLang(session.lang);
       const teamId = this.readTeamId();
+      if (!teamId || !session.teams.some((team) => team.id === teamId)) {
+        await this.router.navigate(['/join', this.sessionCode()]);
+        return;
+      }
+      const seated = await this.keepSeat(teamId, init);
+      if (!seated) return;
+
       const payload = JSON.stringify({
         game: session.game,
         stage: session.stage,
@@ -237,6 +247,7 @@ export class PlayPage {
         memory: session.memory,
         study: session.study,
         feedback: session.feedback,
+        occupiedTeamIds: session.occupiedTeamIds,
       });
       const phase = `${session.game}:${session.stage}:${session.memoryRound}`;
       if (!init && payload === this.lastPayload) return;
@@ -250,6 +261,39 @@ export class PlayPage {
     } catch {
       this.error.set(this.i18n.m().playGameNotFound);
     }
+  }
+
+  private async keepSeat(teamId: string, force: boolean): Promise<boolean> {
+    const now = Date.now();
+    if (!force && now - this.lastSeatAt < 4000) return true;
+    try {
+      await this.api.claimSeat(this.sessionCode(), {
+        teamId,
+        deviceId: getDeviceId(),
+      });
+      this.lastSeatAt = now;
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof HttpErrorResponse
+          ? error.error?.message || this.i18n.m().joinTeamBusy
+          : this.i18n.m().joinTeamBusy;
+      this.error.set(message);
+      try {
+        localStorage.removeItem(`zukunftstag-team-${this.sessionCode()}`);
+      } catch {
+        /* ignore */
+      }
+      await this.router.navigate(['/join', this.sessionCode()]);
+      return false;
+    }
+  }
+
+  private releaseSeatBestEffort(): void {
+    const code = this.sessionCode();
+    const teamId = this.teamId() || this.readTeamId();
+    if (!code || !teamId) return;
+    void this.api.releaseSeat(code, { teamId, deviceId: getDeviceId() }).catch(() => undefined);
   }
 
   private readTeamId(): string {

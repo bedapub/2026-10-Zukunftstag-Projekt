@@ -16,9 +16,13 @@ import {
   PublicSession,
   StudyAnswer,
   Team,
+  TeamPresence,
   UmfangAnswer,
 } from '../app/core/models/session';
 import { codeExists, deleteGame, listGames, loadSession, saveSession, serialize } from './db';
+
+/** A seat is free again if no heartbeat arrives within this window. */
+const PRESENCE_TTL_MS = 12_000;
 
 export interface SessionRecord {
   code: string;
@@ -31,6 +35,7 @@ export interface SessionRecord {
   studyUnblinded: boolean;
   studyDrugColor: ChocolateColor;
   lang: GameLang;
+  presence: TeamPresence[];
   memoryRounds: MemoryRoundPublic[];
   teams: Team[];
   heights: HeightsAnswer[];
@@ -108,6 +113,48 @@ function publicMemoryRounds(session: SessionRecord): MemoryRoundPublic[] {
   }));
 }
 
+function prunePresence(session: SessionRecord, now = Date.now()): void {
+  if (!Array.isArray(session.presence)) session.presence = [];
+  session.presence = session.presence.filter(
+    (item) => now - item.lastSeen <= PRESENCE_TTL_MS,
+  );
+}
+
+function occupiedTeamIds(session: SessionRecord, now = Date.now()): string[] {
+  prunePresence(session, now);
+  return session.presence.map((item) => item.teamId);
+}
+
+function claimPresence(
+  session: SessionRecord,
+  teamId: string,
+  deviceId: string,
+): void {
+  const now = Date.now();
+  prunePresence(session, now);
+  const cleanDevice = deviceId.trim();
+  if (!cleanDevice) throw badRequest('Gerät fehlt');
+  const team = session.teams.find((item) => item.id === teamId);
+  if (!team) throw badRequest('Team unbekannt');
+
+  // Drop this device from any other team seat.
+  session.presence = session.presence.filter((item) => item.deviceId !== cleanDevice);
+
+  const existing = session.presence.find((item) => item.teamId === teamId);
+  if (existing && existing.deviceId !== cleanDevice) {
+    throw httpError(
+      session.lang === 'en'
+        ? 'This team is already active on another device'
+        : 'Dieses Team ist bereits auf einem anderen Gerät aktiv',
+      409,
+    );
+  }
+  session.presence = [
+    ...session.presence.filter((item) => item.teamId !== teamId),
+    { teamId, deviceId: cleanDevice, lastSeen: now },
+  ];
+}
+
 export function toPublic(session: SessionRecord): PublicSession {
   return {
     code: session.code,
@@ -118,6 +165,7 @@ export function toPublic(session: SessionRecord): PublicSession {
     studyUnblinded: session.studyUnblinded,
     studyDrugColor: session.studyUnblinded ? session.studyDrugColor : undefined,
     lang: session.lang === 'en' ? 'en' : 'de',
+    occupiedTeamIds: occupiedTeamIds(session),
     memoryRounds: publicMemoryRounds(session),
     teams: session.teams,
     heights: session.heights,
@@ -183,6 +231,7 @@ export async function createSession(
       studyUnblinded: false,
       studyDrugColor,
       lang,
+      presence: [],
       memoryRounds: buildMemoryRounds(),
       teams: [],
       heights: [],
@@ -208,12 +257,19 @@ export async function getHost(code: string, hostKey: string): Promise<HostSessio
 
 export async function joinTeam(
   code: string,
-  payload: { teamName: string; people: { role: Person['role']; name: string }[] },
+  payload: {
+    teamName: string;
+    people: { role: Person['role']; name: string }[];
+    deviceId?: string;
+  },
 ): Promise<{ team: Team; session: PublicSession }> {
   return serialize(code, async () => {
     const session = await requireSession(code);
-    if (session.game !== 'lobby') {
-      throw httpError('Beitritt nur in der Lobby', 409);
+    if (session.game === 'done') {
+      throw httpError(
+        session.lang === 'en' ? 'This game is already finished' : 'Dieses Spiel ist bereits beendet',
+        409,
+      );
     }
     const teamName = payload.teamName.trim();
     if (!teamName) throw badRequest('Teamname fehlt');
@@ -243,8 +299,40 @@ export async function joinTeam(
     };
     session.teams.push(team);
     session.teams.sort((a, b) => a.name.localeCompare(b.name));
+    if (payload.deviceId) claimPresence(session, team.id, payload.deviceId);
     await saveSession(session);
     return { team, session: toPublic(session) };
+  });
+}
+
+/** Rejoin an existing team after lobby, or renew the device heartbeat. */
+export async function claimSeat(
+  code: string,
+  payload: { teamId: string; deviceId: string },
+): Promise<{ team: Team; session: PublicSession }> {
+  return serialize(code, async () => {
+    const session = await requireSession(code);
+    claimPresence(session, payload.teamId, payload.deviceId);
+    await saveSession(session);
+    const team = assertTeam(session, payload.teamId);
+    return { team, session: toPublic(session) };
+  });
+}
+
+export async function releaseSeat(
+  code: string,
+  payload: { teamId: string; deviceId: string },
+): Promise<{ ok: true }> {
+  return serialize(code, async () => {
+    const session = await requireSession(code);
+    if (!Array.isArray(session.presence)) session.presence = [];
+    const deviceId = payload.deviceId.trim();
+    const teamId = payload.teamId.trim();
+    session.presence = session.presence.filter(
+      (item) => !(item.teamId === teamId && item.deviceId === deviceId),
+    );
+    await saveSession(session);
+    return { ok: true as const };
   });
 }
 

@@ -1,77 +1,126 @@
 <app-roche-header [subtitle]="i18n.m().joinTitle" />
 <main class="page">
-  <form class="card join-form" (submit)="$event.preventDefault(); submit()">
-    <h1>{{ i18n.m().joinTitle }}</h1>
+  @if (mode() === 'rejoin') {
+    <section class="card join-form">
+      <h1>{{ i18n.m().joinRejoinTitle }}</h1>
+      <p class="pin">{{ resolvedCode() }}</p>
+      <p class="hint">{{ i18n.m().joinRejoinHint }}</p>
 
-    @if (!code()) {
+      @if (!freeTeams().length) {
+        <p class="muted">{{ i18n.m().joinNoFreeTeams }}</p>
+        <button type="button" class="btn secondary" [disabled]="busy()" (click)="reloadSession()">
+          {{ i18n.m().hostContinue }}
+        </button>
+      } @else {
+        <ul class="team-pick">
+          @for (team of freeTeams(); track team.id) {
+            <li>
+              <button
+                type="button"
+                class="team-pick-btn"
+                [disabled]="busy()"
+                (click)="rejoin(team.id)"
+              >
+                <strong>{{ team.name }}</strong>
+                <span>{{ peopleLabel(team) }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <button
+        type="button"
+        class="btn"
+        [disabled]="busy()"
+        (click)="startCreateNew()"
+      >
+        {{ i18n.m().joinCreateNew }}
+      </button>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+    </section>
+  } @else {
+    <form class="card join-form" (submit)="$event.preventDefault(); submit()">
+      <h1>{{ creatingNew() ? i18n.m().joinCreateNew : i18n.m().joinTitle }}</h1>
+
+      @if (!code()) {
+        <label class="field">
+          <span>{{ i18n.m().homePin }}</span>
+          <input
+            inputmode="numeric"
+            [value]="pin()"
+            (input)="pin.set($any($event.target).value)"
+          />
+        </label>
+      } @else {
+        <p class="pin">{{ code() }}</p>
+      }
+
       <label class="field">
-        <span>{{ i18n.m().homePin }}</span>
+        <span>{{ i18n.m().joinTeamName }}</span>
         <input
-          inputmode="numeric"
-          [value]="pin()"
-          (input)="pin.set($any($event.target).value)"
+          list="roche-teams"
+          [placeholder]="i18n.m().joinTeamPlaceholder"
+          [value]="teamName()"
+          (input)="teamName.set($any($event.target).value)"
         />
+        <datalist id="roche-teams">
+          @for (team of rocheTeams(); track team.name) {
+            <option [value]="team.name">{{ team.indication }}</option>
+          }
+        </datalist>
       </label>
-    } @else {
-      <p class="pin">{{ code() }}</p>
-    }
 
-    <label class="field">
-      <span>{{ i18n.m().joinTeamName }}</span>
-      <input
-        list="roche-teams"
-        [placeholder]="i18n.m().joinTeamPlaceholder"
-        [value]="teamName()"
-        (input)="teamName.set($any($event.target).value)"
-      />
-      <datalist id="roche-teams">
-        @for (team of teams(); track team.name) {
-          <option [value]="team.name">{{ team.indication }}</option>
+      <section>
+        <h2>{{ i18n.m().joinParents }}</h2>
+        @for (row of parents(); track row.id) {
+          <div class="name-row">
+            <input
+              [value]="row.value"
+              [placeholder]="i18n.m().joinFirstName"
+              (input)="setName('parent', row.id, $any($event.target).value)"
+            />
+            <button type="button" class="btn secondary" (click)="remove('parent', row.id)">
+              –
+            </button>
+          </div>
         }
-      </datalist>
-    </label>
+        <button type="button" class="btn secondary" (click)="add('parent')">
+          {{ i18n.m().joinAddParent }}
+        </button>
+      </section>
 
-    <section>
-      <h2>{{ i18n.m().joinParents }}</h2>
-      @for (row of parents(); track row.id) {
-        <div class="name-row">
-          <input
-            [value]="row.value"
-            [placeholder]="i18n.m().joinFirstName"
-            (input)="setName('parent', row.id, $any($event.target).value)"
-          />
-          <button type="button" class="btn secondary" (click)="remove('parent', row.id)">
-            –
-          </button>
-        </div>
+      <section>
+        <h2>{{ i18n.m().joinChildren }}</h2>
+        @for (row of children(); track row.id) {
+          <div class="name-row">
+            <input
+              [value]="row.value"
+              [placeholder]="i18n.m().joinFirstName"
+              (input)="setName('child', row.id, $any($event.target).value)"
+            />
+            <button type="button" class="btn secondary" (click)="remove('child', row.id)">
+              –
+            </button>
+          </div>
+        }
+        <button type="button" class="btn secondary" (click)="add('child')">
+          {{ i18n.m().joinAddChild }}
+        </button>
+      </section>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
       }
-      <button type="button" class="btn secondary" (click)="add('parent')">
-        {{ i18n.m().joinAddParent }}
-      </button>
-    </section>
-
-    <section>
-      <h2>{{ i18n.m().joinChildren }}</h2>
-      @for (row of children(); track row.id) {
-        <div class="name-row">
-          <input
-            [value]="row.value"
-            [placeholder]="i18n.m().joinFirstName"
-            (input)="setName('child', row.id, $any($event.target).value)"
-          />
-          <button type="button" class="btn secondary" (click)="remove('child', row.id)">
-            –
-          </button>
-        </div>
+      <button class="btn" type="submit" [disabled]="busy()">{{ i18n.m().joinSubmit }}</button>
+      @if (creatingNew()) {
+        <button type="button" class="btn secondary" [disabled]="busy()" (click)="backToRejoin()">
+          {{ i18n.m().joinBackToTeams }}
+        </button>
       }
-      <button type="button" class="btn secondary" (click)="add('child')">
-        {{ i18n.m().joinAddChild }}
-      </button>
-    </section>
-
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-    <button class="btn" type="submit" [disabled]="busy()">{{ i18n.m().joinSubmit }}</button>
-  </form>
+    </form>
+  }
 </main>
