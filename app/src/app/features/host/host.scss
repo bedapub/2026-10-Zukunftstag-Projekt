@@ -102,14 +102,25 @@ app-host,
   margin: 0 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Only non-grid stages use a column flex layout (keep .split as CSS grid) */
+.host-screen main.host > .stage,
+.host-screen main.host > .charts {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 
+.host-screen main.host > .split {
+  display: grid;
+  align-items: center;
+}
+
 .host-screen main.host > .recap {
   flex: 1 1 auto;
+  display: grid;
   width: calc(100% - 2 * var(--inset));
   max-height: var(--avail-h);
   overflow: auto;
